@@ -1,10 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { games } from '../games/gameConfig.js'
-import { getScores } from '../utils/leaderboard.js'
+import { subscribeScores } from '../utils/leaderboard.js'
 
 export default function Leaderboard() {
   const [activeGameId, setActiveGameId] = useState(games[0]?.id)
-  const scores = getScores(activeGameId)
+  const [scores, setScores] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    const unsubscribe = subscribeScores(activeGameId, (nextScores) => {
+      setScores(nextScores)
+      setLoading(false)
+    })
+    return unsubscribe
+  }, [activeGameId])
 
   return (
     <section className="leaderboard">
@@ -21,7 +31,9 @@ export default function Leaderboard() {
         ))}
       </div>
 
-      {scores.length === 0 ? (
+      {loading ? (
+        <p className="leaderboard-empty">불러오는 중...</p>
+      ) : scores.length === 0 ? (
         <p className="leaderboard-empty">아직 기록이 없습니다. 게임을 플레이해서 첫 기록을 남겨보세요!</p>
       ) : (
         <ol className="leaderboard-list">

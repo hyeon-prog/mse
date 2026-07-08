@@ -24,6 +24,8 @@ export default function AppleGame() {
   const [status, setStatus] = useState('idle') // idle | playing | over
   const [selection, setSelection] = useState(null) // {r1,c1,r2,c2}
   const [playerName, setPlayerName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const draggingRef = useRef(false)
   const gridRef = useRef(null)
 
@@ -123,9 +125,17 @@ export default function AppleGame() {
     return row >= minR && row <= maxR && col >= minC && col <= maxC
   }
 
-  const handleSaveScore = () => {
-    addScore('apple-game', playerName, score)
-    setStatus('idle')
+  const handleSaveScore = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await addScore('apple-game', playerName, score)
+      setStatus('idle')
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -176,9 +186,10 @@ export default function AppleGame() {
                   onChange={(e) => setPlayerName(e.target.value)}
                   maxLength={12}
                 />
+                {saveError && <p className="apple-game-error">{saveError}</p>}
                 <div className="apple-game-result-actions">
-                  <button className="btn btn-primary" onClick={handleSaveScore}>
-                    기록 저장
+                  <button className="btn btn-primary" onClick={handleSaveScore} disabled={saving}>
+                    {saving ? '저장 중...' : '기록 저장'}
                   </button>
                   <button className="btn btn-secondary" onClick={startGame}>
                     다시하기

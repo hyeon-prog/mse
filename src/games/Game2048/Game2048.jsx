@@ -19,6 +19,8 @@ export default function Game2048() {
   const [score, setScore] = useState(0)
   const [status, setStatus] = useState('playing') // playing | over
   const [playerName, setPlayerName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const touchStart = useRef(null)
 
   const handleMove = (direction) => {
@@ -72,9 +74,17 @@ export default function Game2048() {
     setPlayerName('')
   }
 
-  const handleSaveScore = () => {
-    addScore('2048', playerName, score)
-    restart()
+  const handleSaveScore = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await addScore('2048', playerName, score)
+      restart()
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -111,9 +121,10 @@ export default function Game2048() {
                 onChange={(e) => setPlayerName(e.target.value)}
                 maxLength={12}
               />
+              {saveError && <p className="game2048-error">{saveError}</p>}
               <div className="game2048-result-actions">
-                <button className="btn btn-primary" onClick={handleSaveScore}>
-                  기록 저장
+                <button className="btn btn-primary" onClick={handleSaveScore} disabled={saving}>
+                  {saving ? '저장 중...' : '기록 저장'}
                 </button>
                 <button className="btn btn-secondary" onClick={restart}>
                   다시하기
