@@ -1,199 +1,151 @@
 import { useCallback, useEffect, useState } from "react";
-import { GameShell } from "../../components/GameShell";
-import { useHighScore } from "../../hooks/useHighScore";
-import { DominoMenu } from "./DominoMenu";
-import { DominoTile } from "./DominoTile";
-import { canPlay, getValidMoves } from "./engine/board";
-import { chooseAiMove, type AiDifficulty } from "./engine/ai";
-import { HUMAN_ID, aiId, createMatch, passTurn, playMove, resolveDrawPhase, startNextRound } from "./engine/match";
-import type { BoardEnd, MatchMode, MatchState, PlayerId, Tile } from "./engine/types";
-import "./Domino.css";
+import { DominoLeaderboard } from "./DominoLeaderboard";
+import { DominoLobby } from "./DominoLobby";
+import { DominoLocalGame } from "./DominoLocalGame";
+import { DominoOnlineGame } from "./DominoOnlineGame";
+import { DominoOnlineSetup } from "./DominoOnlineSetup";
+import { ensureSignedIn } from "./multiplayer/firebase";
+import { createRoom, joinRoom, RoomError, startGame, subscribeRoom } from "./multiplayer/room";
+import type { RoomState } from "./multiplayer/types";
+import type { MatchMode } from "./engine/types";
+import "./DominoMenu.css";
 
-const AI_MOVE_DELAY_MS = 500;
+type Screen = "home" | "single" | "online-setup" | "online-room" | "leaderboard";
 
-function playerLabel(id: PlayerId): string {
-  if (id === HUMAN_ID) return "나";
-  const [, n] = id.split("-");
-  return `AI ${n}`;
+function initialRoomCodeFromUrl(): string {
+  return new URLSearchParams(window.location.search).get("room")?.toUpperCase() ?? "";
 }
 
 export function Domino() {
-  const [match, setMatch] = useState<MatchState | null>(null);
-  const [difficulty, setDifficulty] = useState<AiDifficulty>("medium");
-  const [pendingTile, setPendingTile] = useState<Tile | null>(null);
-  const [highScore, submitScore] = useHighScore("domino");
-
-  const startMatch = useCallback(
-    (mode: MatchMode, targetScore: number, playerCount: number, chosenDifficulty: AiDifficulty) => {
-      const playerOrder: PlayerId[] = [
-        HUMAN_ID,
-        ...Array.from({ length: playerCount - 1 }, (_, i) => aiId(i + 1)),
-      ];
-      setDifficulty(chosenDifficulty);
-      setMatch(createMatch(mode, targetScore, playerOrder));
-      setPendingTile(null);
-    },
-    []
-  );
+  const [screen, setScreen] = useState<Screen>(() => (initialRoomCodeFromUrl() ? "online-setup" : "home"));
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [room, setRoom] = useState<RoomState | null>(null);
+  const [myUid, setMyUid] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!match || match.status !== "playing") return;
+    if (!roomId) return;
+    return subscribeRoom(roomId, setRoom);
+  }, [roomId]);
 
-    const drawn = resolveDrawPhase(match);
-    if (drawn !== match) {
-      setMatch(drawn);
-      return;
+  const goHome = useCallback(() => {
+    setScreen("home");
+    setRoomId(null);
+    setRoom(null);
+    setErrorMessage(null);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+
+  const handleCreateRoom = useCallback(async (nick: string, mode: MatchMode, targetScore: number) => {
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const uid = await ensureSignedIn();
+      const newRoomId = await createRoom(nick, mode, targetScore);
+      setMyUid(uid);
+      setNickname(nick);
+      setRoomId(newRoomId);
+      setScreen("online-room");
+    } catch {
+      setErrorMessage("방을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setBusy(false);
     }
+  }, []);
 
-    if (!canPlay(match.hands[match.currentTurn], match.board)) {
-      setMatch(passTurn(match));
-      return;
-    }
-
-    if (match.currentTurn !== HUMAN_ID) {
-      const timer = setTimeout(() => {
-        setMatch((current) => {
-          if (!current || current.status !== "playing" || current.currentTurn === HUMAN_ID) return current;
-          const move = chooseAiMove(current.hands[current.currentTurn], current.board, difficulty);
-          return move ? playMove(current, move) : current;
-        });
-      }, AI_MOVE_DELAY_MS);
-      return () => clearTimeout(timer);
-    }
-  }, [match, difficulty]);
-
-  useEffect(() => {
-    if (match?.status === "match-over") {
-      submitScore(match.scores[HUMAN_ID]);
-    }
-  }, [match?.status, match?.scores, submitScore]);
-
-  const handleTileClick = useCallback(
-    (tile: Tile) => {
-      if (!match || match.status !== "playing" || match.currentTurn !== HUMAN_ID) return;
-      const moves = getValidMoves(match.hands[HUMAN_ID], match.board).filter(
-        (m) => m.tile.a === tile.a && m.tile.b === tile.b
-      );
-      if (moves.length === 0) return;
-      if (moves.length === 1) {
-        setMatch(playMove(match, moves[0]));
-        return;
+  const handleJoinRoom = useCallback(async (nick: string, code: string) => {
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const uid = await ensureSignedIn();
+      await joinRoom(code, nick);
+      setMyUid(uid);
+      setNickname(nick);
+      setRoomId(code);
+      setScreen("online-room");
+    } catch (error) {
+      if (error instanceof RoomError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("방에 참가하지 못했습니다. 잠시 후 다시 시도해주세요.");
       }
-      setPendingTile(tile);
-    },
-    [match]
-  );
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
-  const handleChooseEnd = useCallback(
-    (end: BoardEnd) => {
-      if (!match || !pendingTile) return;
-      setMatch(playMove(match, { tile: pendingTile, end }));
-      setPendingTile(null);
-    },
-    [match, pendingTile]
-  );
-
-  if (!match) {
-    return <DominoMenu onStart={startMatch} />;
+  if (screen === "home") {
+    return (
+      <div className="domino-menu">
+        <div className="domino-menu__panel">
+          <span className="domino-menu__corner domino-menu__corner--left" aria-hidden="true">
+            ☥
+          </span>
+          <span className="domino-menu__corner domino-menu__corner--right" aria-hidden="true">
+            ☥
+          </span>
+          <p className="domino-menu__eyebrow">MINI GAME ARCADE · DOMINO</p>
+          <h1 className="domino-menu__title">도미노</h1>
+          <div className="domino-menu__rule" aria-hidden="true" />
+          <p className="domino-menu__subtitle">이집트 카페에서 즐기던 표준 블록 도미노(더블식스)</p>
+          <button className="domino-menu__start" onClick={() => setScreen("single")}>
+            싱글 플레이 (vs AI)
+          </button>
+          <button className="domino-menu__start" onClick={() => setScreen("online-setup")}>
+            온라인 멀티플레이
+          </button>
+          <button className="domino-menu__option" style={{ width: "100%" }} onClick={() => setScreen("leaderboard")}>
+            랭킹 보기
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  const humanValidTileKeys = new Set(
-    match.status === "playing" && match.currentTurn === HUMAN_ID
-      ? getValidMoves(match.hands[HUMAN_ID], match.board).map((m) => `${m.tile.a}-${m.tile.b}`)
-      : []
-  );
-  const opponents = match.playerOrder.filter((id) => id !== HUMAN_ID);
+  if (screen === "single") {
+    return <DominoLocalGame onExit={goHome} />;
+  }
 
-  return (
-    <GameShell
-      title="도미노"
-      accentVar="--accent-domino"
-      score={match.scores[HUMAN_ID]}
-      highScore={highScore}
-      controlsHint="손패에서 타일을 클릭해 보드 양 끝에 맞춰 놓으세요"
-    >
-      <div className="domino-board">
-        <div className="domino-status-bar">
-          <span>턴: {playerLabel(match.currentTurn)}</span>
-          <span>보유고 {match.boneyard.length}장</span>
-          <span className="domino-status-bar__scores">
-            {match.playerOrder.map((id) => (
-              <span key={id}>
-                {playerLabel(id)} {match.scores[id]}
-              </span>
-            ))}
-          </span>
-        </div>
+  if (screen === "leaderboard") {
+    return <DominoLeaderboard onBack={goHome} />;
+  }
 
-        <div className="domino-opponents">
-          {opponents.map((id) => (
-            <div
-              key={id}
-              className={
-                match.currentTurn === id ? "domino-opponent domino-opponent--active" : "domino-opponent"
-              }
-            >
-              <span className="domino-opponent__label">{playerLabel(id)}</span>
-              <div className="domino-opponent__hand">
-                {match.hands[id].map((_, i) => (
-                  <DominoTile key={i} tile={{ a: 0, b: 0 }} faceDown />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+  if (screen === "online-setup") {
+    return (
+      <DominoOnlineSetup
+        initialRoomCode={initialRoomCodeFromUrl()}
+        busy={busy}
+        errorMessage={errorMessage}
+        onCreateRoom={handleCreateRoom}
+        onJoinRoom={handleJoinRoom}
+        onBack={goHome}
+      />
+    );
+  }
 
-        <div className="domino-chain">
-          {match.board.chain.length === 0 && <p className="domino-chain__empty">첫 타일을 놓아보세요</p>}
-          {match.board.chain.map((placed, i) => (
-            <DominoTile
-              key={i}
-              tile={placed.tile}
-              flipped={placed.flipped}
-              orientation={placed.tile.a === placed.tile.b ? "vertical" : "horizontal"}
-            />
-          ))}
-        </div>
+  // screen === "online-room"
+  if (!roomId || !room || !myUid) {
+    return <p className="domino-status-bar">연결하는 중...</p>;
+  }
 
-        {pendingTile && (
-          <div className="domino-end-picker">
-            <p>어느 쪽에 놓을까요?</p>
-            <button onClick={() => handleChooseEnd("left")}>왼쪽</button>
-            <button onClick={() => handleChooseEnd("right")}>오른쪽</button>
-            <button onClick={() => setPendingTile(null)}>취소</button>
-          </div>
-        )}
+  if (!room.public) {
+    return (
+      <DominoLobby
+        room={room}
+        roomId={roomId}
+        myUid={myUid}
+        starting={busy}
+        onLeave={goHome}
+        onStart={async () => {
+          setBusy(true);
+          await startGame(roomId);
+          setBusy(false);
+        }}
+      />
+    );
+  }
 
-        <div className="domino-human-hand">
-          {match.hands[HUMAN_ID].map((tile, i) => (
-            <button
-              key={i}
-              className="domino-human-hand__slot"
-              onClick={() => handleTileClick(tile)}
-              disabled={match.currentTurn !== HUMAN_ID || !humanValidTileKeys.has(`${tile.a}-${tile.b}`)}
-            >
-              <DominoTile tile={tile} />
-            </button>
-          ))}
-        </div>
-
-        {match.status === "round-over" && match.lastRoundResult && (
-          <div className="domino-round-end">
-            <p>
-              {playerLabel(match.lastRoundResult.winnerId)}가 이번 라운드 승리! (+
-              {match.lastRoundResult.pointsAwarded}점)
-            </p>
-            <button onClick={() => setMatch(startNextRound(match))}>다음 라운드</button>
-          </div>
-        )}
-
-        {match.status === "match-over" && (
-          <div className="domino-match-end">
-            <p>{playerLabel(match.matchWinnerId ?? HUMAN_ID)}가 매치에서 승리했습니다!</p>
-            <button onClick={() => setMatch(null)}>메뉴로 돌아가기</button>
-          </div>
-        )}
-      </div>
-    </GameShell>
-  );
+  return <DominoOnlineGame room={room} roomId={roomId} myUid={myUid} myNickname={nickname} onExit={goHome} />;
 }
