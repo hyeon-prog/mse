@@ -1,0 +1,94 @@
+.tetris-main {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.tetris-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(10, 26px);
+  grid-template-rows: repeat(20, 26px);
+  gap: 1px;
+  background: #1e1e2e;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.tetris-cell {
+  width: 26px;
+  height: 26px;
+  border-radius: 3px;
+  background: #2a2a3d;
+}
+
+.tetris-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.tetris-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px 24px;
+  border-radius: 10px;
+}
+
+.tetris-result input {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.tetris-result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tetris-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.tetris-stat {
+  font-weight: 600;
+}
+
+.tetris-next {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.tetris-next-grid {
+  display: grid;
+  gap: 1px;
+  margin-top: 6px;
+}
+
+.tetris-next-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+}
+
+.tetris-help {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
