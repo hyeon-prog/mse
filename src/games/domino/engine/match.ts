@@ -52,10 +52,15 @@ export function resolveDrawPhase(state: MatchState): MatchState {
 
   let hand = state.hands[player];
   let boneyard = state.boneyard;
+  let drewAny = false;
   while (!canPlay(hand, state.board) && boneyard.length > 0) {
     hand = [...hand, boneyard[0]];
     boneyard = boneyard.slice(1);
+    drewAny = true;
   }
+  // 뽑을 게 없어서 아무것도 못 뽑았다면 참조를 그대로 유지해야 한다.
+  // 그렇지 않으면 호출부(React effect)가 "상태가 바뀌었다"고 오인해 무한 재실행된다.
+  if (!drewAny) return state;
   return { ...state, hands: { ...state.hands, [player]: hand }, boneyard };
 }
 

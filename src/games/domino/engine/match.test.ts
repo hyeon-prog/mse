@@ -62,6 +62,15 @@ describe("resolveDrawPhase", () => {
     expect(result.hands.human).toEqual([{ a: 5, b: 5 }, { a: 6, b: 6 }, { a: 3, b: 3 }]);
     expect(result.boneyard).toEqual([]);
   });
+
+  it("이미 보유고가 비어 있고 여전히 낼 수 없으면 같은 참조를 그대로 반환한다", () => {
+    const state = makeState({
+      hands: { human: [{ a: 5, b: 5 }], ai: [] },
+      board: { chain: [{ tile: { a: 1, b: 2 }, flipped: false }], leftEnd: 1, rightEnd: 2 },
+      boneyard: [],
+    });
+    expect(resolveDrawPhase(state)).toBe(state);
+  });
 });
 
 describe("playMove", () => {
