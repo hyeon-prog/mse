@@ -1,13 +1,20 @@
 import { useState, type CSSProperties } from "react";
+import type { AiDifficulty } from "./engine/ai";
 import type { MatchMode } from "./engine/types";
 import "./DominoMenu.css";
 
 interface DominoMenuProps {
-  onStart: (mode: MatchMode, targetScore: number) => void;
+  onStart: (mode: MatchMode, targetScore: number, playerCount: number, difficulty: AiDifficulty) => void;
 }
 
 const DEFAULT_TARGET_SCORE = 100;
 const WING_FEATHER_COUNT = 6;
+const PLAYER_COUNT_OPTIONS = [2, 3, 4] as const;
+const DIFFICULTY_OPTIONS: { value: AiDifficulty; label: string }[] = [
+  { value: "easy", label: "쉬움" },
+  { value: "medium", label: "보통" },
+  { value: "hard", label: "어려움" },
+];
 
 function featherStyle(index: number): CSSProperties {
   return { "--feather-index": index } as CSSProperties;
@@ -16,6 +23,8 @@ function featherStyle(index: number): CSSProperties {
 export function DominoMenu({ onStart }: DominoMenuProps) {
   const [mode, setMode] = useState<MatchMode>("target-score");
   const [targetScore, setTargetScore] = useState(DEFAULT_TARGET_SCORE);
+  const [playerCount, setPlayerCount] = useState<number>(4);
+  const [difficulty, setDifficulty] = useState<AiDifficulty>("medium");
 
   return (
     <div className="domino-menu">
@@ -46,8 +55,56 @@ export function DominoMenu({ onStart }: DominoMenuProps) {
         </div>
 
         <p className="domino-menu__subtitle">
-          이집트 카페에서 즐기던 표준 블록 도미노(더블식스), AI와 1:1로 대결하세요
+          이집트 카페에서 즐기던 표준 블록 도미노(더블식스), AI와 대결하세요
         </p>
+
+        <div className="domino-menu__field">
+          <span className="domino-menu__label">인원수</span>
+          <div className="domino-menu__options">
+            {PLAYER_COUNT_OPTIONS.map((count) => (
+              <label
+                key={count}
+                className={
+                  playerCount === count
+                    ? "domino-menu__option domino-menu__option--active"
+                    : "domino-menu__option"
+                }
+              >
+                <input
+                  type="radio"
+                  name="playerCount"
+                  checked={playerCount === count}
+                  onChange={() => setPlayerCount(count)}
+                />
+                {count}명
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="domino-menu__field">
+          <span className="domino-menu__label">난이도</span>
+          <div className="domino-menu__options">
+            {DIFFICULTY_OPTIONS.map(({ value, label }) => (
+              <label
+                key={value}
+                className={
+                  difficulty === value
+                    ? "domino-menu__option domino-menu__option--active"
+                    : "domino-menu__option"
+                }
+              >
+                <input
+                  type="radio"
+                  name="difficulty"
+                  checked={difficulty === value}
+                  onChange={() => setDifficulty(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="domino-menu__field">
           <span className="domino-menu__label">종료 방식</span>
@@ -101,7 +158,10 @@ export function DominoMenu({ onStart }: DominoMenuProps) {
           </label>
         )}
 
-        <button className="domino-menu__start" onClick={() => onStart(mode, targetScore)}>
+        <button
+          className="domino-menu__start"
+          onClick={() => onStart(mode, targetScore, playerCount, difficulty)}
+        >
           <span aria-hidden="true">☥</span> 게임 시작 <span aria-hidden="true">☥</span>
         </button>
 

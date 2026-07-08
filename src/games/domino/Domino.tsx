@@ -4,23 +4,37 @@ import { useHighScore } from "../../hooks/useHighScore";
 import { DominoMenu } from "./DominoMenu";
 import { DominoTile } from "./DominoTile";
 import { canPlay, getValidMoves } from "./engine/board";
-import { chooseAiMove } from "./engine/ai";
-import { createMatch, passTurn, playMove, resolveDrawPhase, startNextRound } from "./engine/match";
+import { chooseAiMove, type AiDifficulty } from "./engine/ai";
+import { HUMAN_ID, aiId, createMatch, passTurn, playMove, resolveDrawPhase, startNextRound } from "./engine/match";
 import type { BoardEnd, MatchMode, MatchState, PlayerId, Tile } from "./engine/types";
 import "./Domino.css";
 
 const AI_MOVE_DELAY_MS = 500;
 
+function playerLabel(id: PlayerId): string {
+  if (id === HUMAN_ID) return "나";
+  const [, n] = id.split("-");
+  return `AI ${n}`;
+}
+
 export function Domino() {
   const [match, setMatch] = useState<MatchState | null>(null);
+  const [difficulty, setDifficulty] = useState<AiDifficulty>("medium");
   const [pendingTile, setPendingTile] = useState<Tile | null>(null);
   const [highScore, submitScore] = useHighScore("domino");
 
-  const startMatch = useCallback((mode: MatchMode, targetScore: number) => {
-    const starter: PlayerId = Math.random() < 0.5 ? "human" : "ai";
-    setMatch(createMatch(mode, targetScore, starter));
-    setPendingTile(null);
-  }, []);
+  const startMatch = useCallback(
+    (mode: MatchMode, targetScore: number, playerCount: number, chosenDifficulty: AiDifficulty) => {
+      const playerOrder: PlayerId[] = [
+        HUMAN_ID,
+        ...Array.from({ length: playerCount - 1 }, (_, i) => aiId(i + 1)),
+      ];
+      setDifficulty(chosenDifficulty);
+      setMatch(createMatch(mode, targetScore, playerOrder));
+      setPendingTile(null);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!match || match.status !== "playing") return;
@@ -36,28 +50,28 @@ export function Domino() {
       return;
     }
 
-    if (match.currentTurn === "ai") {
+    if (match.currentTurn !== HUMAN_ID) {
       const timer = setTimeout(() => {
         setMatch((current) => {
-          if (!current || current.status !== "playing" || current.currentTurn !== "ai") return current;
-          const move = chooseAiMove(current.hands.ai, current.board);
+          if (!current || current.status !== "playing" || current.currentTurn === HUMAN_ID) return current;
+          const move = chooseAiMove(current.hands[current.currentTurn], current.board, difficulty);
           return move ? playMove(current, move) : current;
         });
       }, AI_MOVE_DELAY_MS);
       return () => clearTimeout(timer);
     }
-  }, [match]);
+  }, [match, difficulty]);
 
   useEffect(() => {
     if (match?.status === "match-over") {
-      submitScore(match.scores.human);
+      submitScore(match.scores[HUMAN_ID]);
     }
-  }, [match?.status, match?.scores.human, submitScore]);
+  }, [match?.status, match?.scores, submitScore]);
 
   const handleTileClick = useCallback(
     (tile: Tile) => {
-      if (!match || match.status !== "playing" || match.currentTurn !== "human") return;
-      const moves = getValidMoves(match.hands.human, match.board).filter(
+      if (!match || match.status !== "playing" || match.currentTurn !== HUMAN_ID) return;
+      const moves = getValidMoves(match.hands[HUMAN_ID], match.board).filter(
         (m) => m.tile.a === tile.a && m.tile.b === tile.b
       );
       if (moves.length === 0) return;
@@ -84,33 +98,48 @@ export function Domino() {
   }
 
   const humanValidTileKeys = new Set(
-    match.status === "playing" && match.currentTurn === "human"
-      ? getValidMoves(match.hands.human, match.board).map((m) => `${m.tile.a}-${m.tile.b}`)
+    match.status === "playing" && match.currentTurn === HUMAN_ID
+      ? getValidMoves(match.hands[HUMAN_ID], match.board).map((m) => `${m.tile.a}-${m.tile.b}`)
       : []
   );
+  const opponents = match.playerOrder.filter((id) => id !== HUMAN_ID);
 
   return (
     <GameShell
       title="도미노"
       accentVar="--accent-domino"
-      score={match.scores.human}
+      score={match.scores[HUMAN_ID]}
       highScore={highScore}
       controlsHint="손패에서 타일을 클릭해 보드 양 끝에 맞춰 놓으세요"
     >
       <div className="domino-board">
         <div className="domino-status-bar">
-          <span>턴: {match.currentTurn === "human" ? "나" : "AI"}</span>
-          <span>
-            내 타일 {match.hands.human.length}장 · AI {match.hands.ai.length}장 · 보유고 {match.boneyard.length}장
-          </span>
-          <span>
-            나 {match.scores.human} : {match.scores.ai} AI
+          <span>턴: {playerLabel(match.currentTurn)}</span>
+          <span>보유고 {match.boneyard.length}장</span>
+          <span className="domino-status-bar__scores">
+            {match.playerOrder.map((id) => (
+              <span key={id}>
+                {playerLabel(id)} {match.scores[id]}
+              </span>
+            ))}
           </span>
         </div>
 
-        <div className="domino-ai-hand">
-          {match.hands.ai.map((_, i) => (
-            <DominoTile key={i} tile={{ a: 0, b: 0 }} faceDown />
+        <div className="domino-opponents">
+          {opponents.map((id) => (
+            <div
+              key={id}
+              className={
+                match.currentTurn === id ? "domino-opponent domino-opponent--active" : "domino-opponent"
+              }
+            >
+              <span className="domino-opponent__label">{playerLabel(id)}</span>
+              <div className="domino-opponent__hand">
+                {match.hands[id].map((_, i) => (
+                  <DominoTile key={i} tile={{ a: 0, b: 0 }} faceDown />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
@@ -136,12 +165,12 @@ export function Domino() {
         )}
 
         <div className="domino-human-hand">
-          {match.hands.human.map((tile, i) => (
+          {match.hands[HUMAN_ID].map((tile, i) => (
             <button
               key={i}
               className="domino-human-hand__slot"
               onClick={() => handleTileClick(tile)}
-              disabled={match.currentTurn !== "human" || !humanValidTileKeys.has(`${tile.a}-${tile.b}`)}
+              disabled={match.currentTurn !== HUMAN_ID || !humanValidTileKeys.has(`${tile.a}-${tile.b}`)}
             >
               <DominoTile tile={tile} />
             </button>
@@ -151,7 +180,7 @@ export function Domino() {
         {match.status === "round-over" && match.lastRoundResult && (
           <div className="domino-round-end">
             <p>
-              {match.lastRoundResult.winnerId === "human" ? "내가" : "AI가"} 이번 라운드 승리! (+
+              {playerLabel(match.lastRoundResult.winnerId)}가 이번 라운드 승리! (+
               {match.lastRoundResult.pointsAwarded}점)
             </p>
             <button onClick={() => setMatch(startNextRound(match))}>다음 라운드</button>
@@ -160,7 +189,7 @@ export function Domino() {
 
         {match.status === "match-over" && (
           <div className="domino-match-end">
-            <p>{match.matchWinnerId === "human" ? "내가 매치에서 승리했습니다!" : "AI가 매치에서 승리했습니다."}</p>
+            <p>{playerLabel(match.matchWinnerId ?? HUMAN_ID)}가 매치에서 승리했습니다!</p>
             <button onClick={() => setMatch(null)}>메뉴로 돌아가기</button>
           </div>
         )}
