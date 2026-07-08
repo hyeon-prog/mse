@@ -22,3 +22,21 @@ describe("chooseAiMove", () => {
     expect(move).toEqual({ tile: { a: 3, b: 3 }, end: "right" });
   });
 });
+
+describe("chooseAiMove (medium)", () => {
+  it("핀 합이 가장 큰 유효 수를 고른다", () => {
+    const board = { chain: [{ tile: { a: 1, b: 2 }, flipped: false }], leftEnd: 1, rightEnd: 2 };
+    const hand = [{ a: 1, b: 1 }, { a: 2, b: 6 }];
+    const move = chooseAiMove(hand, board, "medium");
+    expect(move).toEqual({ tile: { a: 2, b: 6 }, end: "right" });
+  });
+});
+
+describe("chooseAiMove (hard)", () => {
+  it("상대가 이어받기 가장 어려운(공개 정보상 희소한) 쪽을 남기는 수를 고른다", () => {
+    const board = { chain: [{ tile: { a: 1, b: 2 }, flipped: false }], leftEnd: 1, rightEnd: 2 };
+    const hand = [{ a: 1, b: 1 }, { a: 2, b: 5 }];
+    const move = chooseAiMove(hand, board, "hard");
+    expect(move).toEqual({ tile: { a: 1, b: 1 }, end: "left" });
+  });
+});
