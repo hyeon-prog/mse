@@ -2,6 +2,7 @@ import AppleGame from './AppleGame/AppleGame.jsx'
 import Game2048 from './Game2048/Game2048.jsx'
 import Tetris from './Tetris/Tetris.jsx'
 import Minesweeper from './Minesweeper/Minesweeper.jsx'
+import BounceBall from './BounceBall/BounceBall.jsx'
 
 export const games = [
   {
@@ -31,6 +32,13 @@ export const games = [
     description: '숫자를 단서로 지뢰를 피해 모든 칸을 열어보세요.',
     icon: '💣',
     component: Minesweeper,
+  },
+  {
+    id: 'bounce-ball',
+    name: '바운스볼',
+    description: '좌우로 움직여 떨어지는 장애물을 피하고 최대한 오래 버텨보세요.',
+    icon: '⚪',
+    component: BounceBall,
   },
 ]
 
