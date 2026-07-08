@@ -76,6 +76,7 @@ describe("resolveDrawPhase", () => {
 describe("playMove", () => {
   it("마지막 타일을 내면 라운드가 종료되고 상대 핀 합만큼 점수가 오른다", () => {
     const state = makeState({
+      mode: "target-score",
       hands: { human: [{ a: 1, b: 2 }], ai: [{ a: 0, b: 0 }, { a: 3, b: 4 }] },
       board: { chain: [{ tile: { a: 2, b: 5 }, flipped: false }], leftEnd: 2, rightEnd: 5 },
       currentTurn: "human",
@@ -123,6 +124,7 @@ describe("passTurn", () => {
 
   it("아무도 못 내고 보유고도 비었으면 핀 합이 낮은 사람이 블록 승리한다", () => {
     const state = makeState({
+      mode: "target-score",
       hands: { human: [{ a: 0, b: 0 }], ai: [{ a: 1, b: 1 }, { a: 2, b: 2 }] },
       board: { chain: [{ tile: { a: 5, b: 6 }, flipped: false }], leftEnd: 5, rightEnd: 6 },
       boneyard: [],
@@ -131,8 +133,8 @@ describe("passTurn", () => {
     });
     const result = passTurn(state);
     expect(result.status).toBe("round-over");
-    expect(result.lastRoundResult).toEqual({ winnerId: "human", reason: "blocked", pointsAwarded: 4 });
-    expect(result.scores.human).toBe(4);
+    expect(result.lastRoundResult).toEqual({ winnerId: "human", reason: "blocked", pointsAwarded: 6 });
+    expect(result.scores.human).toBe(6);
   });
 
   it("핀 합이 같으면 라운드 시작자가 아닌 사람이 이긴다", () => {
