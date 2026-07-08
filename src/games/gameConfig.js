@@ -2,6 +2,7 @@ import AppleGame from './AppleGame/AppleGame.jsx'
 import Game2048 from './Game2048/Game2048.jsx'
 import Tetris from './Tetris/Tetris.jsx'
 import Minesweeper from './Minesweeper/Minesweeper.jsx'
+import AniPang from './AniPang/AniPang.jsx'
 
 export const games = [
   {
@@ -31,6 +32,13 @@ export const games = [
     description: '숫자를 단서로 지뢰를 피해 모든 칸을 열어보세요.',
     icon: '💣',
     component: Minesweeper,
+  },
+  {
+    id: 'anipang',
+    name: '애니팡',
+    description: '인접한 동물을 맞바꿔 3개 이상 맞추고 제한시간 안에 최고점을 노려보세요.',
+    icon: '🐾',
+    component: AniPang,
   },
 ]
 
