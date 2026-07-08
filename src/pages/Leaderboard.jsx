@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 import { games } from '../games/gameConfig.js'
 import { subscribeScores } from '../utils/leaderboard.js'
 
+const PERIOD_TABS = [
+  { id: 'daily', label: '일간' },
+  { id: 'weekly', label: '주간' },
+  { id: 'monthly', label: '월간' },
+  { id: 'all', label: '전체' },
+]
+
 export default function Leaderboard() {
   const [activeGameId, setActiveGameId] = useState(games[0]?.id)
+  const [activePeriod, setActivePeriod] = useState('all')
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -13,6 +21,7 @@ export default function Leaderboard() {
     setError('')
     const unsubscribe = subscribeScores(
       activeGameId,
+      activePeriod,
       (nextScores) => {
         setScores(nextScores)
         setLoading(false)
@@ -23,7 +32,7 @@ export default function Leaderboard() {
       },
     )
     return unsubscribe
-  }, [activeGameId])
+  }, [activeGameId, activePeriod])
 
   return (
     <section className="leaderboard">
@@ -36,6 +45,18 @@ export default function Leaderboard() {
             onClick={() => setActiveGameId(game.id)}
           >
             {game.icon} {game.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="leaderboard-period-tabs">
+        {PERIOD_TABS.map((period) => (
+          <button
+            key={period.id}
+            className={'leaderboard-period-tab' + (period.id === activePeriod ? ' active' : '')}
+            onClick={() => setActivePeriod(period.id)}
+          >
+            {period.label}
           </button>
         ))}
       </div>

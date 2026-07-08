@@ -397,6 +397,38 @@ h3 { font-size: 0.9rem; }
   animation: navPop 0.25s ease;
 }
 
+.leaderboard-period-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.leaderboard-period-tab {
+  padding: 6px 12px;
+  border-radius: 0;
+  border: 2px solid var(--border-color);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  transition: transform 0.1s ease, color 0.1s ease;
+}
+
+.leaderboard-period-tab:hover {
+  color: var(--text);
+  transform: translate(-1px, -1px);
+}
+
+.leaderboard-period-tab.active {
+  background: var(--accent-2);
+  color: var(--text);
+  border-color: var(--border-color);
+  box-shadow: 2px 2px 0 var(--pixel-shadow);
+  animation: navPop 0.25s ease;
+}
+
 .leaderboard-list {
   list-style: none;
   padding: 0;
