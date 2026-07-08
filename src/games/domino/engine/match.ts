@@ -13,7 +13,7 @@ export function nextPlayer(order: PlayerId[], current: PlayerId): PlayerId {
   return order[(index + 1) % order.length];
 }
 
-function pickClosestAfter(order: PlayerId[], starter: PlayerId, candidates: PlayerId[]): PlayerId {
+export function pickClosestAfter(order: PlayerId[], starter: PlayerId, candidates: PlayerId[]): PlayerId {
   const startIndex = order.indexOf(starter);
   for (let offset = 1; offset <= order.length; offset++) {
     const candidate = order[(startIndex + offset) % order.length];
