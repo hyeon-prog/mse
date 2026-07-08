@@ -22,7 +22,29 @@ npm run dev       # http://localhost:5173
 npm run build      # 프로덕션 빌드 (타입 체크 포함)
 npm run preview    # 빌드 결과 미리보기
 npm run lint        # oxlint 검사
+npm test              # vitest 유닛 테스트
 ```
+
+## 도미노 온라인 멀티플레이 설정 (Firebase)
+
+도미노의 온라인 멀티플레이/랭킹 기능은 Firebase Realtime Database를 사용합니다.
+로컬에서 이 기능을 켜려면:
+
+1. [Firebase 콘솔](https://console.firebase.google.com)에서 새 프로젝트를 만듭니다(무료 Spark 플랜).
+2. Authentication → Sign-in method에서 "익명" 로그인을 활성화합니다.
+3. Realtime Database를 생성합니다(테스트 모드로 만든 뒤, 이 레포 루트의
+   `database.rules.json` 내용을 Rules 탭에 붙여넣고 게시하세요).
+4. 프로젝트 설정 → 일반에서 웹 앱을 추가하고 발급받은 설정값을 복사합니다.
+5. `.env.example`을 `.env`로 복사하고 값을 채웁니다.
+6. `npm run dev`로 실행하면 온라인 멀티플레이/랭킹이 동작합니다.
+
+**주의**: `database.rules.json`은 실제 Firebase 프로젝트 없이 설계된 규칙입니다.
+게시 후 Firebase 콘솔의 Rules 시뮬레이터로 아래를 직접 검증해보세요.
+
+- 호스트가 대기 중(아직 `public`이 생기기 전)에만 다른 사람의 손패 경로에 쓸 수
+  있는지, 게임 시작 후에는 호스트도 못 쓰는지
+- 자기 턴이 아닌 사람이 공개 상태(`public`)를 못 쓰는지
+- 각자 자기 손패(`hands/{uid}`)만 읽을 수 있고 남의 손패는 못 읽는지
 
 ## 폴더 구조
 
