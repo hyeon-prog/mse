@@ -1,0 +1,127 @@
+@keyframes apPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes apShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes scoreBumpAP {
+  0% { transform: scale(1.4); color: var(--accent); }
+  100% { transform: scale(1); }
+}
+
+.anipang {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.anipang-score-value {
+  display: inline-block;
+  animation: scoreBumpAP 0.3s ease;
+}
+
+.anipang-hud {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+}
+
+.anipang-board {
+  position: relative;
+  display: grid;
+  grid-auto-rows: 36px;
+  gap: 2px;
+  background: var(--surface-alt);
+  padding: 6px;
+  border: 4px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+}
+
+.ap-cell {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.15), inset 2px 2px 0 rgba(255, 255, 255, 0.3);
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ap-cell:disabled {
+  cursor: default;
+}
+
+.ap-cell.selected {
+  box-shadow: 0 0 0 3px var(--accent) inset;
+  animation: apPulse 0.5s ease-in-out infinite;
+}
+
+.ap-cell.shaking {
+  animation: apShake 0.18s ease;
+}
+
+.anipang-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  text-align: center;
+}
+
+.anipang-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 24px 24px;
+  border: 3px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  animation: popIn 0.25s ease both;
+}
+
+.anipang-result input {
+  padding: 8px 10px;
+  border-radius: 0;
+  border: 2px solid var(--border-color);
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.anipang-result-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.anipang-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.anipang-help {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 320px;
+  text-align: center;
+}

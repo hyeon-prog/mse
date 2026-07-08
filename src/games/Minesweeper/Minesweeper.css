@@ -1,0 +1,134 @@
+@keyframes cellReveal {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flagPop {
+  0% { transform: scale(0.4) rotate(-15deg); }
+  60% { transform: scale(1.25) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes mineBoom {
+  0% { transform: scale(0.5); background: #fff3b0; }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.minesweeper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.minesweeper-select {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.minesweeper-difficulties {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.minesweeper-hud {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+}
+
+.minesweeper-board {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  background: var(--surface-alt);
+  padding: 6px;
+  border: 4px solid var(--border-color);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+}
+
+.ms-cell {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--surface-alt);
+  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.25), inset 3px 3px 0 rgba(255, 255, 255, 0.35);
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ms-cell:disabled {
+  cursor: default;
+}
+
+.ms-cell:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.ms-cell.revealed {
+  background: var(--surface);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+  animation: cellReveal 0.15s ease-out;
+}
+
+.ms-cell.mine {
+  background: var(--accent);
+  animation: mineBoom 0.3s ease-out;
+}
+
+.ms-cell.flagged {
+  animation: flagPop 0.2s ease-out;
+}
+
+.minesweeper-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  text-align: center;
+}
+
+.minesweeper-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 24px 24px;
+  border: 3px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  animation: popIn 0.25s ease both;
+}
+
+.minesweeper-result-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.minesweeper-help {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
