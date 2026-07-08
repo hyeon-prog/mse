@@ -6,6 +6,14 @@ const P1_KEYS = { left: 'a', right: 'd', jump: 'w', block: 's', punch: 'f', kick
 const P2_KEYS = { left: 'arrowleft', right: 'arrowright', jump: 'arrowup', block: 'arrowdown', punch: 'k', kick: 'l' }
 const ALL_KEYS = new Set([...Object.values(P1_KEYS), ...Object.values(P2_KEYS)])
 
+function actionClass(fighter) {
+  if (fighter.action === 'attack') return fighter.attackType === 'kick' ? 'action-kick' : 'action-punch'
+  if (fighter.action === 'block') return 'action-block'
+  if (fighter.action === 'jump') return 'action-jump'
+  if (fighter.action === 'hit') return 'action-hit'
+  return 'action-idle'
+}
+
 function initMatch() {
   return {
     fight: createFight(),
@@ -128,24 +136,38 @@ export default function Tekken() {
 
       <div className="tekken-arena" style={{ width: `${ARENA_WIDTH}px` }}>
         <div
-          className={`tekken-fighter ${fight.p1.action}`}
+          className="tekken-fighter"
           style={{
             left: `${fight.p1.x}px`,
             bottom: `${20 - fight.p1.y}px`,
             transform: `translateX(-50%) scaleX(${fight.p1.facing})`,
           }}
         >
-          🥋
+          <div className={`fighter-sprite p1 ${actionClass(fight.p1)}`}>
+            <div className="f-head" />
+            <div className="f-body" />
+            <div className="f-arm back" />
+            <div className="f-arm front" />
+            <div className="f-leg back" />
+            <div className="f-leg front" />
+          </div>
         </div>
         <div
-          className={`tekken-fighter ${fight.p2.action}`}
+          className="tekken-fighter"
           style={{
             left: `${fight.p2.x}px`,
             bottom: `${20 - fight.p2.y}px`,
             transform: `translateX(-50%) scaleX(${fight.p2.facing})`,
           }}
         >
-          🥷
+          <div className={`fighter-sprite p2 ${actionClass(fight.p2)}`}>
+            <div className="f-head" />
+            <div className="f-body" />
+            <div className="f-arm back" />
+            <div className="f-arm front" />
+            <div className="f-leg back" />
+            <div className="f-leg front" />
+          </div>
         </div>
 
         {status === 'match-over' && (
