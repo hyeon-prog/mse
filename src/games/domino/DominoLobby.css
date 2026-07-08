@@ -1,0 +1,83 @@
+.domino-lobby {
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  color: var(--text-primary);
+}
+
+.domino-lobby__code {
+  text-align: center;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+.domino-lobby__share {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.domino-lobby__link {
+  flex: 1;
+  padding: var(--space-2);
+  border-radius: 8px;
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.domino-lobby__players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.domino-lobby__players li {
+  padding: var(--space-2);
+  background: var(--bg-panel-raised);
+  border-radius: 8px;
+}
+
+.domino-lobby__host-tag {
+  color: var(--accent-domino);
+  font-size: 0.75rem;
+  margin-left: var(--space-2);
+}
+
+.domino-lobby__start,
+.domino-lobby__leave {
+  padding: var(--space-3);
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border-hairline);
+  cursor: pointer;
+}
+
+.domino-lobby__start {
+  background: var(--accent-domino);
+  color: #101018;
+  font-weight: 600;
+}
+
+.domino-lobby__start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.domino-lobby__leave {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.domino-lobby__waiting {
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
