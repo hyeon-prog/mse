@@ -88,6 +88,11 @@
   gap: 10px;
 }
 
+.game2048-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .game2048-help {
   color: var(--text-muted);
   font-size: 1.05rem;

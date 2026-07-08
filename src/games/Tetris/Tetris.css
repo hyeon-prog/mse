@@ -67,6 +67,11 @@
   gap: 10px;
 }
 
+.tetris-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .tetris-side {
   display: flex;
   flex-direction: column;

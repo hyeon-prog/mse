@@ -1,27 +1,29 @@
-const STORAGE_KEY = 'mse-leaderboard'
+import {
+  addDoc,
+  collection,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+} from 'firebase/firestore'
+import { db } from '../firebase.js'
 
-function readAll() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}
-  } catch {
-    return {}
-  }
+const scoresRef = collection(db, 'scores')
+
+export function subscribeScores(gameId, onUpdate) {
+  const q = query(scoresRef, where('gameId', '==', gameId), orderBy('score', 'desc'), limit(10))
+  return onSnapshot(q, (snapshot) => {
+    onUpdate(snapshot.docs.map((doc) => doc.data()))
+  })
 }
 
-function writeAll(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-}
-
-export function getScores(gameId) {
-  const all = readAll()
-  return (all[gameId] || []).sort((a, b) => b.score - a.score).slice(0, 10)
-}
-
-export function addScore(gameId, name, score) {
-  const all = readAll()
-  const list = all[gameId] || []
-  list.push({ name: name || '익명', score, date: new Date().toISOString() })
-  all[gameId] = list.sort((a, b) => b.score - a.score).slice(0, 10)
-  writeAll(all)
-  return all[gameId]
+export async function addScore(gameId, name, score) {
+  await addDoc(scoresRef, {
+    gameId,
+    name: (name || '익명').slice(0, 12),
+    score,
+    createdAt: serverTimestamp(),
+  })
 }

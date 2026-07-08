@@ -94,6 +94,11 @@
   gap: 10px;
 }
 
+.apple-game-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .apple-game-help {
   color: var(--text-muted);
   font-size: 1.05rem;

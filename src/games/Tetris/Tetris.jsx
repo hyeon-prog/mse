@@ -58,6 +58,8 @@ function hardDrop(g) {
 export default function Tetris() {
   const [game, setGame] = useState(initGame)
   const [playerName, setPlayerName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     if (game.status !== 'playing') return
@@ -109,9 +111,17 @@ export default function Tetris() {
     setPlayerName('')
   }
 
-  const handleSaveScore = () => {
-    addScore('tetris', playerName, game.score)
-    restart()
+  const handleSaveScore = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await addScore('tetris', playerName, game.score)
+      restart()
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const displayBoard = mergePiece(game.board, game.piece)
@@ -146,9 +156,10 @@ export default function Tetris() {
                     onChange={(e) => setPlayerName(e.target.value)}
                     maxLength={12}
                   />
+                  {saveError && <p className="tetris-error">{saveError}</p>}
                   <div className="tetris-result-actions">
-                    <button className="btn btn-primary" onClick={handleSaveScore}>
-                      기록 저장
+                    <button className="btn btn-primary" onClick={handleSaveScore} disabled={saving}>
+                      {saving ? '저장 중...' : '기록 저장'}
                     </button>
                     <button className="btn btn-secondary" onClick={restart}>
                       다시하기
