@@ -22,7 +22,7 @@ export interface Move {
   end: BoardEnd;
 }
 
-export type PlayerId = "human" | "ai";
+export type PlayerId = string;
 
 export type MatchMode = "single-round" | "target-score";
 
@@ -35,6 +35,7 @@ export interface RoundResult {
 export interface MatchState {
   mode: MatchMode;
   targetScore: number;
+  playerOrder: PlayerId[];
   hands: Record<PlayerId, Tile[]>;
   scores: Record<PlayerId, number>;
   board: BoardState;

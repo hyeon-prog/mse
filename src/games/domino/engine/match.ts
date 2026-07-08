@@ -2,24 +2,48 @@ import { createDeck, HAND_SIZE, shuffle } from "./deck";
 import { applyMove, canPlay, createEmptyBoard, pipSum } from "./board";
 import type { MatchMode, MatchState, Move, PlayerId, RoundResult, Tile } from "./types";
 
-const otherPlayer: Record<PlayerId, PlayerId> = { human: "ai", ai: "human" };
+export const HUMAN_ID: PlayerId = "human";
 
-function dealHands(): { human: Tile[]; ai: Tile[]; boneyard: Tile[] } {
-  const shuffled = shuffle(createDeck());
-  return {
-    human: shuffled.slice(0, HAND_SIZE),
-    ai: shuffled.slice(HAND_SIZE, HAND_SIZE * 2),
-    boneyard: shuffled.slice(HAND_SIZE * 2),
-  };
+export function aiId(n: number): PlayerId {
+  return `ai-${n}`;
 }
 
-export function createMatch(mode: MatchMode, targetScore: number, starter: PlayerId): MatchState {
-  const dealt = dealHands();
+export function nextPlayer(order: PlayerId[], current: PlayerId): PlayerId {
+  const index = order.indexOf(current);
+  return order[(index + 1) % order.length];
+}
+
+function pickClosestAfter(order: PlayerId[], starter: PlayerId, candidates: PlayerId[]): PlayerId {
+  const startIndex = order.indexOf(starter);
+  for (let offset = 1; offset <= order.length; offset++) {
+    const candidate = order[(startIndex + offset) % order.length];
+    if (candidates.includes(candidate)) return candidate;
+  }
+  return candidates[0];
+}
+
+function dealHands(playerOrder: PlayerId[]): { hands: Record<PlayerId, Tile[]>; boneyard: Tile[] } {
+  const shuffled = shuffle(createDeck());
+  const hands: Record<PlayerId, Tile[]> = {};
+  let offset = 0;
+  for (const player of playerOrder) {
+    hands[player] = shuffled.slice(offset, offset + HAND_SIZE);
+    offset += HAND_SIZE;
+  }
+  return { hands, boneyard: shuffled.slice(offset) };
+}
+
+export function createMatch(mode: MatchMode, targetScore: number, playerOrder: PlayerId[]): MatchState {
+  const dealt = dealHands(playerOrder);
+  const scores: Record<PlayerId, number> = {};
+  for (const player of playerOrder) scores[player] = 0;
+  const starter = playerOrder[Math.floor(Math.random() * playerOrder.length)];
   return {
     mode,
     targetScore,
-    hands: { human: dealt.human, ai: dealt.ai },
-    scores: { human: 0, ai: 0 },
+    playerOrder,
+    hands: dealt.hands,
+    scores,
     board: createEmptyBoard(),
     boneyard: dealt.boneyard,
     currentTurn: starter,
@@ -31,11 +55,11 @@ export function createMatch(mode: MatchMode, targetScore: number, starter: Playe
 }
 
 export function startNextRound(state: MatchState): MatchState {
-  const dealt = dealHands();
+  const dealt = dealHands(state.playerOrder);
   const starter = state.lastRoundResult?.winnerId ?? state.roundStarter;
   return {
     ...state,
-    hands: { human: dealt.human, ai: dealt.ai },
+    hands: dealt.hands,
     board: createEmptyBoard(),
     boneyard: dealt.boneyard,
     currentTurn: starter,
@@ -69,8 +93,9 @@ function pipTotal(state: MatchState, player: PlayerId): number {
 }
 
 function finishRound(state: MatchState, winnerId: PlayerId, reason: RoundResult["reason"]): MatchState {
-  const loserId = otherPlayer[winnerId];
-  const pointsAwarded = pipTotal(state, loserId);
+  const pointsAwarded = state.playerOrder
+    .filter((id) => id !== winnerId)
+    .reduce((sum, id) => sum + pipTotal(state, id), 0);
   const scores = { ...state.scores, [winnerId]: state.scores[winnerId] + pointsAwarded };
   const matchOver = state.mode === "single-round" || scores[winnerId] >= state.targetScore;
   return {
@@ -99,27 +124,22 @@ export function playMove(state: MatchState, move: Move): MatchState {
   if (newHand.length === 0) {
     return finishRound(next, player, "emptied-hand");
   }
-  return { ...next, currentTurn: otherPlayer[player] };
+  return { ...next, currentTurn: nextPlayer(state.playerOrder, player) };
 }
 
 export function passTurn(state: MatchState): MatchState {
   if (state.status !== "playing") return state;
 
   if (state.boneyard.length === 0) {
-    const humanCan = canPlay(state.hands.human, state.board);
-    const aiCan = canPlay(state.hands.ai, state.board);
-    if (!humanCan && !aiCan) {
-      const humanPips = pipTotal(state, "human");
-      const aiPips = pipTotal(state, "ai");
-      const winnerId: PlayerId =
-        humanPips === aiPips
-          ? otherPlayer[state.roundStarter]
-          : humanPips < aiPips
-            ? "human"
-            : "ai";
+    const anyoneCanPlay = state.playerOrder.some((id) => canPlay(state.hands[id], state.board));
+    if (!anyoneCanPlay) {
+      const pipTotals = new Map(state.playerOrder.map((id) => [id, pipTotal(state, id)] as const));
+      const lowest = Math.min(...pipTotals.values());
+      const tied = state.playerOrder.filter((id) => pipTotals.get(id) === lowest);
+      const winnerId = tied.length === 1 ? tied[0] : pickClosestAfter(state.playerOrder, state.roundStarter, tied);
       return finishRound(state, winnerId, "blocked");
     }
   }
 
-  return { ...state, currentTurn: otherPlayer[state.currentTurn] };
+  return { ...state, currentTurn: nextPlayer(state.playerOrder, state.currentTurn) };
 }
