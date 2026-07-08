@@ -126,7 +126,7 @@ export default function Tetris() {
             row.map((cell, c) => (
               <div
                 key={`${r}-${c}`}
-                className="tetris-cell"
+                className={'tetris-cell' + (cell ? ' filled' : '')}
                 style={{ background: cell || 'transparent' }}
               />
             )),

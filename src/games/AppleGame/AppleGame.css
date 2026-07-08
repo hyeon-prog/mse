@@ -2,25 +2,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   user-select: none;
 }
 
 .apple-game-hud {
   display: flex;
   gap: 24px;
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-family: var(--font-pixel);
+  font-size: 0.75rem;
 }
 
 .apple-game-grid {
   position: relative;
   display: inline-flex;
   flex-direction: column;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
+  border: 4px solid var(--border-color);
+  border-radius: 0;
   background: var(--surface-alt);
   padding: 4px;
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
   touch-action: none;
 }
 
@@ -35,21 +36,25 @@
   align-items: center;
   justify-content: center;
   margin: 1px;
-  border-radius: 50%;
-  background: #ff6b6b;
+  border-radius: 2px;
+  background: #ff5d5d;
+  border: 2px solid #8f1f1f;
+  box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.25), inset 2px 2px 0 rgba(255, 255, 255, 0.3);
   color: white;
-  font-weight: 700;
-  font-size: 0.85rem;
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
   cursor: pointer;
 }
 
 .apple-cell.removed {
   background: transparent;
+  border-color: transparent;
+  box-shadow: none;
   cursor: default;
 }
 
 .apple-cell.selected {
-  outline: 2px solid #ffd43b;
+  outline: 3px solid var(--accent-2);
   transform: scale(1.08);
 }
 
@@ -59,33 +64,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.65);
 }
 
 .apple-game-result {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: var(--surface);
-  padding: 20px 28px;
-  border-radius: 10px;
+  padding: 24px 28px;
+  border: 3px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
   color: var(--text);
 }
 
 .apple-game-result input {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  border-radius: 0;
+  border: 2px solid var(--border-color);
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  background: var(--surface-alt);
+  color: var(--text);
 }
 
 .apple-game-result-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .apple-game-help {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
 }
