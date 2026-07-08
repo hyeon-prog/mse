@@ -1,0 +1,11 @@
+src/
+├── App.jsx
+├── pages/
+│   ├── Lobby.jsx
+│   ├── GameList.jsx
+│   ├── GamePage.jsx
+│   └── Leaderboard.jsx
+└── games/
+    ├── gameConfig.js
+    └── AppleGame/
+        └── AppleGame.jsx
