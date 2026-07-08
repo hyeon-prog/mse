@@ -1,3 +1,26 @@
+@keyframes cellReveal {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flagPop {
+  0% { transform: scale(0.4) rotate(-15deg); }
+  60% { transform: scale(1.25) rotate(8deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes mineBoom {
+  0% { transform: scale(0.5); background: #fff3b0; }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
 .minesweeper {
   display: flex;
   flex-direction: column;
@@ -56,13 +79,23 @@
   cursor: default;
 }
 
+.ms-cell:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
 .ms-cell.revealed {
   background: var(--surface);
   box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+  animation: cellReveal 0.15s ease-out;
 }
 
 .ms-cell.mine {
   background: var(--accent);
+  animation: mineBoom 0.3s ease-out;
+}
+
+.ms-cell.flagged {
+  animation: flagPop 0.2s ease-out;
 }
 
 .minesweeper-overlay {
@@ -86,6 +119,7 @@
   padding: 24px 24px;
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
+  animation: popIn 0.25s ease both;
 }
 
 .minesweeper-result-actions {

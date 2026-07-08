@@ -10,12 +10,26 @@ const KEY_DIRECTIONS = {
   ArrowDown: 'down',
 }
 
-function initialGrid() {
-  return addRandomTile(addRandomTile(createEmptyGrid()))
+function diffPositions(before, after) {
+  const positions = []
+  for (let r = 0; r < before.length; r++) {
+    for (let c = 0; c < before[r].length; c++) {
+      if (before[r][c] === 0 && after[r][c] !== 0) positions.push(`${r}-${c}`)
+    }
+  }
+  return positions
+}
+
+function createInitialBoard() {
+  const empty = createEmptyGrid()
+  const withOne = addRandomTile(empty)
+  const withTwo = addRandomTile(withOne)
+  const newTiles = new Set([...diffPositions(empty, withOne), ...diffPositions(withOne, withTwo)])
+  return { grid: withTwo, merged: new Set(), newTiles }
 }
 
 export default function Game2048() {
-  const [grid, setGrid] = useState(initialGrid)
+  const [board, setBoard] = useState(createInitialBoard)
   const [score, setScore] = useState(0)
   const [status, setStatus] = useState('playing') // playing | over
   const [playerName, setPlayerName] = useState('')
@@ -25,17 +39,27 @@ export default function Game2048() {
 
   const handleMove = (direction) => {
     if (status !== 'playing') return
-    setGrid((prevGrid) => {
-      const result = move(prevGrid, direction)
-      if (!result.changed) return prevGrid
+    setBoard((prev) => {
+      const result = move(prev.grid, direction)
+      if (!result.changed) return prev
       const nextGrid = addRandomTile(result.grid)
+      const newTiles = new Set(diffPositions(result.grid, nextGrid))
+      const merged = new Set(result.mergedCells.map(({ r, c }) => `${r}-${c}`))
       setScore((s) => s + result.gained)
       if (!canMove(nextGrid)) {
         setStatus('over')
       }
-      return nextGrid
+      return { grid: nextGrid, merged, newTiles }
     })
   }
+
+  useEffect(() => {
+    if (board.merged.size === 0 && board.newTiles.size === 0) return
+    const id = setTimeout(() => {
+      setBoard((prev) => ({ ...prev, merged: new Set(), newTiles: new Set() }))
+    }, 220)
+    return () => clearTimeout(id)
+  }, [board])
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -68,7 +92,7 @@ export default function Game2048() {
   }
 
   const restart = () => {
-    setGrid(initialGrid())
+    setBoard(createInitialBoard())
     setScore(0)
     setStatus('playing')
     setPlayerName('')
@@ -90,7 +114,9 @@ export default function Game2048() {
   return (
     <div className="game2048">
       <div className="game2048-hud">
-        <span>점수: {score}</span>
+        <span>
+          점수: <span className="game2048-score-value" key={score}>{score}</span>
+        </span>
         <button className="btn btn-secondary" onClick={restart}>
           다시 시작
         </button>
@@ -101,12 +127,18 @@ export default function Game2048() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {grid.map((row, r) =>
-          row.map((val, c) => (
-            <div key={`${r}-${c}`} className={`g2048-tile v-${val}`}>
-              {val !== 0 ? val : ''}
-            </div>
-          )),
+        {board.grid.map((row, r) =>
+          row.map((val, c) => {
+            const key = `${r}-${c}`
+            const classNames = ['g2048-tile', `v-${val}`]
+            if (board.merged.has(key)) classNames.push('merged')
+            if (board.newTiles.has(key)) classNames.push('new-tile')
+            return (
+              <div key={key} className={classNames.join(' ')}>
+                {val !== 0 ? val : ''}
+              </div>
+            )
+          }),
         )}
 
         {status === 'over' && (

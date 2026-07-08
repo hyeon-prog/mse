@@ -1,3 +1,34 @@
+@keyframes applePop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.3) rotate(10deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes appleShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+@keyframes scoreBump {
+  0% { transform: scale(1.4); color: var(--accent-2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes timeBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .apple-game {
   display: flex;
   flex-direction: column;
@@ -13,6 +44,17 @@
   font-size: 0.75rem;
 }
 
+.apple-game-score-value {
+  display: inline-block;
+  color: var(--accent);
+  animation: scoreBump 0.3s ease;
+}
+
+.apple-game-time-low {
+  color: var(--accent);
+  animation: timeBlink 0.6s ease-in-out infinite;
+}
+
 .apple-game-grid {
   position: relative;
   display: inline-flex;
@@ -23,6 +65,7 @@
   padding: 4px;
   box-shadow: 5px 5px 0 var(--pixel-shadow);
   touch-action: none;
+  animation: fadeInUp 0.3s ease both;
 }
 
 .apple-game-row {
@@ -44,6 +87,7 @@
   font-family: var(--font-pixel);
   font-size: 0.6rem;
   cursor: pointer;
+  transition: transform 0.08s ease;
 }
 
 .apple-cell.removed {
@@ -56,6 +100,16 @@
 .apple-cell.selected {
   outline: 3px solid var(--accent-2);
   transform: scale(1.08);
+}
+
+.apple-cell.popping {
+  animation: applePop 0.18s ease-out forwards;
+  pointer-events: none;
+}
+
+.apple-cell.invalid {
+  animation: appleShake 0.2s ease;
+  outline: 3px solid #ff3b3b;
 }
 
 .apple-game-overlay {
@@ -77,6 +131,7 @@
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
   color: var(--text);
+  animation: popIn 0.25s ease both;
 }
 
 .apple-game-result input {

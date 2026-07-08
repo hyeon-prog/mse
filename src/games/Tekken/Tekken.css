@@ -1,3 +1,8 @@
+@keyframes healthLowPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .tekken {
   display: flex;
   flex-direction: column;
@@ -40,6 +45,12 @@
 .tekken-health-fill {
   height: 100%;
   background: var(--accent-2);
+  transition: width 0.2s ease;
+}
+
+.tekken-health-fill.low {
+  background: var(--accent);
+  animation: healthLowPulse 0.6s ease-in-out infinite;
 }
 
 .tekken-timer {
@@ -63,6 +74,7 @@
   position: absolute;
   width: 40px;
   height: 60px;
+  transition: left 0.03s linear, bottom 0.03s linear;
 }
 
 .fighter-sprite {
@@ -225,6 +237,7 @@
   padding: 24px 24px;
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
+  animation: popIn 0.25s ease both;
 }
 
 .tekken-help {

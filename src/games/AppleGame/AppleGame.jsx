@@ -10,6 +10,7 @@ function createBoard() {
   return Array.from({ length: ROWS * COLS }, () => ({
     value: Math.floor(Math.random() * 9) + 1,
     removed: false,
+    popping: false,
   }))
 }
 
@@ -23,6 +24,7 @@ export default function AppleGame() {
   const [timeLeft, setTimeLeft] = useState(GAME_TIME)
   const [status, setStatus] = useState('idle') // idle | playing | over
   const [selection, setSelection] = useState(null) // {r1,c1,r2,c2}
+  const [invalidCells, setInvalidCells] = useState([])
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -96,11 +98,23 @@ export default function AppleGame() {
         setBoard((prev) => {
           const next = [...prev]
           indices.forEach((idx) => {
-            next[idx] = { ...next[idx], removed: true }
+            next[idx] = { ...next[idx], popping: true }
           })
           return next
         })
         setScore((s) => s + count)
+        setTimeout(() => {
+          setBoard((prev) => {
+            const next = [...prev]
+            indices.forEach((idx) => {
+              next[idx] = { ...next[idx], removed: true, popping: false }
+            })
+            return next
+          })
+        }, 180)
+      } else if (count > 0) {
+        setInvalidCells(indices)
+        setTimeout(() => setInvalidCells([]), 220)
       }
 
       return null
@@ -141,24 +155,31 @@ export default function AppleGame() {
   return (
     <div className="apple-game">
       <div className="apple-game-hud">
-        <span>점수: {score}</span>
-        <span>남은 시간: {timeLeft}s</span>
+        <span>
+          점수: <span className="apple-game-score-value" key={score}>{score}</span>
+        </span>
+        <span className={timeLeft <= 10 ? 'apple-game-time-low' : ''}>남은 시간: {timeLeft}s</span>
       </div>
 
       <div className="apple-game-grid" ref={gridRef}>
         {Array.from({ length: ROWS }).map((_, row) => (
           <div className="apple-game-row" key={row}>
             {Array.from({ length: COLS }).map((_, col) => {
-              const cellData = board[indexOf(row, col)]
+              const idx = indexOf(row, col)
+              const cellData = board[idx]
               if (cellData.removed) {
                 return <div className="apple-cell removed" key={col} />
               }
+              const classNames = ['apple-cell']
+              if (isSelected(row, col)) classNames.push('selected')
+              if (cellData.popping) classNames.push('popping')
+              if (invalidCells.includes(idx)) classNames.push('invalid')
               return (
                 <div
                   key={col}
                   data-row={row}
                   data-col={col}
-                  className={'apple-cell' + (isSelected(row, col) ? ' selected' : '')}
+                  className={classNames.join(' ')}
                   onPointerDown={handlePointerDown(row, col)}
                 >
                   {cellData.value}

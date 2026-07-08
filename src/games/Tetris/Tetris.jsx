@@ -6,6 +6,7 @@ import {
   SHAPES,
   clearLines,
   createEmptyBoard,
+  getFullRows,
   hasCollision,
   mergePiece,
   randomType,
@@ -14,6 +15,8 @@ import {
   spawnPiece,
 } from './tetrisLogic.js'
 import './Tetris.css'
+
+const CLEAR_FLASH_MS = 260
 
 function initGame() {
   return {
@@ -24,7 +27,17 @@ function initGame() {
     lines: 0,
     level: 1,
     status: 'playing',
+    clearingRows: [],
   }
+}
+
+function spawnNext(g, board) {
+  const nextPiece = spawnPiece(g.nextType)
+  const nextType = randomType()
+  if (hasCollision(board, nextPiece)) {
+    return { ...g, board, status: 'over', clearingRows: [] }
+  }
+  return { ...g, board, piece: nextPiece, nextType, clearingRows: [] }
 }
 
 function tick(g) {
@@ -34,17 +47,19 @@ function tick(g) {
   }
 
   const merged = mergePiece(g.board, g.piece)
-  const { board: clearedBoard, cleared } = clearLines(merged)
+  const fullRows = getFullRows(merged)
+  if (fullRows.length > 0) {
+    return { ...g, board: merged, status: 'clearing', clearingRows: fullRows }
+  }
+  return spawnNext(g, merged)
+}
+
+function resolveClear(g) {
+  const { board: clearedBoard, cleared } = clearLines(g.board)
   const lines = g.lines + cleared
   const level = Math.floor(lines / 10) + 1
   const score = g.score + scoreForLines(cleared, g.level)
-  const nextPiece = spawnPiece(g.nextType)
-  const nextType = randomType()
-
-  if (hasCollision(clearedBoard, nextPiece)) {
-    return { ...g, board: clearedBoard, score, lines, level, status: 'over' }
-  }
-  return { ...g, board: clearedBoard, piece: nextPiece, nextType, score, lines, level }
+  return spawnNext({ ...g, score, lines, level, status: 'playing' }, clearedBoard)
 }
 
 function hardDrop(g) {
@@ -67,6 +82,12 @@ export default function Tetris() {
     const id = setInterval(() => setGame((prev) => tick(prev)), speed)
     return () => clearInterval(id)
   }, [game.status, game.level])
+
+  useEffect(() => {
+    if (game.status !== 'clearing') return
+    const id = setTimeout(() => setGame((prev) => resolveClear(prev)), CLEAR_FLASH_MS)
+    return () => clearTimeout(id)
+  }, [game.status])
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -124,7 +145,7 @@ export default function Tetris() {
     }
   }
 
-  const displayBoard = mergePiece(game.board, game.piece)
+  const displayBoard = game.status === 'clearing' ? game.board : mergePiece(game.board, game.piece)
   const nextMatrix = SHAPES[game.nextType].matrix
   const nextColor = SHAPES[game.nextType].color
 
@@ -136,13 +157,17 @@ export default function Tetris() {
             row.map((cell, c) => (
               <div
                 key={`${r}-${c}`}
-                className={'tetris-cell' + (cell ? ' filled' : '')}
+                className={
+                  'tetris-cell' +
+                  (cell ? ' filled' : '') +
+                  (game.clearingRows.includes(r) ? ' clearing' : '')
+                }
                 style={{ background: cell || 'transparent' }}
               />
             )),
           )}
 
-          {game.status !== 'playing' && (
+          {(game.status === 'paused' || game.status === 'over') && (
             <div className="tetris-overlay">
               {game.status === 'paused' && <p>일시정지 (P 키로 재개)</p>}
               {game.status === 'over' && (
@@ -172,7 +197,9 @@ export default function Tetris() {
         </div>
 
         <div className="tetris-side">
-          <div className="tetris-stat">점수: {game.score}</div>
+          <div className="tetris-stat">
+            점수: <span className="tetris-stat-value" key={game.score}>{game.score}</span>
+          </div>
           <div className="tetris-stat">라인: {game.lines}</div>
           <div className="tetris-stat">레벨: {game.level}</div>
           <div className="tetris-next">

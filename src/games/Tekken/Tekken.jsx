@@ -122,14 +122,20 @@ export default function Tekken() {
         <div className="tekken-health-block">
           <div className="tekken-name">P1 ({p1Wins}승)</div>
           <div className="tekken-health-bar">
-            <div className="tekken-health-fill" style={{ width: `${fight.p1.health}%` }} />
+            <div
+              className={'tekken-health-fill' + (fight.p1.health <= 25 ? ' low' : '')}
+              style={{ width: `${fight.p1.health}%` }}
+            />
           </div>
         </div>
         <div className="tekken-timer">{fight.roundTime}</div>
         <div className="tekken-health-block right">
           <div className="tekken-name">P2 ({p2Wins}승)</div>
           <div className="tekken-health-bar">
-            <div className="tekken-health-fill" style={{ width: `${fight.p2.health}%` }} />
+            <div
+              className={'tekken-health-fill' + (fight.p2.health <= 25 ? ' low' : '')}
+              style={{ width: `${fight.p2.health}%` }}
+            />
           </div>
         </div>
       </div>
@@ -141,6 +147,7 @@ export default function Tekken() {
             left: `${fight.p1.x}px`,
             bottom: `${20 - fight.p1.y}px`,
             transform: `translateX(-50%) scaleX(${fight.p1.facing})`,
+            '--facing': fight.p1.facing,
           }}
         >
           <div className={`fighter-sprite p1 ${actionClass(fight.p1)}`}>
@@ -158,6 +165,7 @@ export default function Tekken() {
             left: `${fight.p2.x}px`,
             bottom: `${20 - fight.p2.y}px`,
             transform: `translateX(-50%) scaleX(${fight.p2.facing})`,
+            '--facing': fight.p2.facing,
           }}
         >
           <div className={`fighter-sprite p2 ${actionClass(fight.p2)}`}>

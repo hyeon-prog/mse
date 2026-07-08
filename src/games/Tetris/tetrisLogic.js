@@ -58,6 +58,13 @@ export function mergePiece(board, piece) {
   return next
 }
 
+export function getFullRows(board) {
+  return board.reduce((acc, row, r) => {
+    if (row.every((cell) => cell)) acc.push(r)
+    return acc
+  }, [])
+}
+
 export function clearLines(board) {
   const remaining = board.filter((row) => row.some((cell) => !cell))
   const cleared = ROWS - remaining.length

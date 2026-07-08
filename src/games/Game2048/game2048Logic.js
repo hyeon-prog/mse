@@ -22,9 +22,11 @@ function slideRowLeft(row) {
   const values = row.filter((v) => v !== 0)
   let gained = 0
   const merged = []
+  const mergedIndices = []
   for (let i = 0; i < values.length; i++) {
     if (values[i] === values[i + 1]) {
       const mergedValue = values[i] * 2
+      mergedIndices.push(merged.length)
       merged.push(mergedValue)
       gained += mergedValue
       i++
@@ -33,7 +35,7 @@ function slideRowLeft(row) {
     }
   }
   while (merged.length < row.length) merged.push(0)
-  return { row: merged, gained }
+  return { row: merged, gained, mergedIndices }
 }
 
 function transpose(grid) {
@@ -44,9 +46,20 @@ function reverseRows(grid) {
   return grid.map((row) => [...row].reverse())
 }
 
+function mapCellBack(r, c, direction) {
+  if (direction === 'right' || direction === 'down') {
+    c = SIZE - 1 - c
+  }
+  if (direction === 'up' || direction === 'down') {
+    ;[r, c] = [c, r]
+  }
+  return { r, c }
+}
+
 export function move(grid, direction) {
   let working = grid.map((row) => [...row])
   let gained = 0
+  const mergedCells = []
 
   if (direction === 'up' || direction === 'down') {
     working = transpose(working)
@@ -55,9 +68,10 @@ export function move(grid, direction) {
     working = reverseRows(working)
   }
 
-  working = working.map((row) => {
-    const { row: newRow, gained: rowGained } = slideRowLeft(row)
+  working = working.map((row, r) => {
+    const { row: newRow, gained: rowGained, mergedIndices } = slideRowLeft(row)
     gained += rowGained
+    mergedIndices.forEach((c) => mergedCells.push(mapCellBack(r, c, direction)))
     return newRow
   })
 
@@ -69,7 +83,7 @@ export function move(grid, direction) {
   }
 
   const changed = working.some((row, r) => row.some((val, c) => val !== grid[r][c]))
-  return { grid: working, gained, changed }
+  return { grid: working, gained, changed, mergedCells }
 }
 
 export function canMove(grid) {

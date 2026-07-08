@@ -23,6 +23,7 @@ function initGame() {
 export default function AniPang() {
   const [game, setGame] = useState(initGame)
   const [selected, setSelected] = useState(null)
+  const [shaking, setShaking] = useState([])
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -63,6 +64,10 @@ export default function AniPang() {
       const swapped = swapCells(game.board, selected.r, selected.c, r, c)
       const { board: resolved, score: gained } = resolveCascades(swapped)
       setGame((prev) => ({ ...prev, board: resolved, score: prev.score + gained }))
+    } else {
+      const keys = [`${selected.r}-${selected.c}`, `${r}-${c}`]
+      setShaking(keys)
+      setTimeout(() => setShaking([]), 220)
     }
     setSelected(null)
   }
@@ -90,7 +95,9 @@ export default function AniPang() {
   return (
     <div className="anipang">
       <div className="anipang-hud">
-        <span>점수: {game.score}</span>
+        <span>
+          점수: <span className="anipang-score-value" key={game.score}>{game.score}</span>
+        </span>
         <span>⏱ {game.timeLeft}초</span>
       </div>
 
@@ -102,7 +109,11 @@ export default function AniPang() {
           row.map((type, c) => (
             <button
               key={`${r}-${c}`}
-              className={'ap-cell' + (selected?.r === r && selected?.c === c ? ' selected' : '')}
+              className={
+                'ap-cell' +
+                (selected?.r === r && selected?.c === c ? ' selected' : '') +
+                (shaking.includes(`${r}-${c}`) ? ' shaking' : '')
+              }
               onClick={() => handleCellClick(r, c)}
               disabled={game.status !== 'playing'}
             >

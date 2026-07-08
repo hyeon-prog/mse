@@ -132,7 +132,7 @@ export default function Minesweeper() {
             return (
               <button
                 key={`${r}-${c}`}
-                className={`ms-cell ${revealed ? 'revealed' : ''} ${isMine && revealed ? 'mine' : ''}`}
+                className={`ms-cell ${revealed ? 'revealed' : ''} ${isMine && revealed ? 'mine' : ''} ${!revealed && flagged ? 'flagged' : ''}`}
                 onClick={() => handleReveal(r, c)}
                 onContextMenu={(e) => handleFlag(e, r, c)}
                 disabled={status !== 'playing' || revealed}

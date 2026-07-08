@@ -1,8 +1,29 @@
+@keyframes apPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes apShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes scoreBumpAP {
+  0% { transform: scale(1.4); color: var(--accent); }
+  100% { transform: scale(1); }
+}
+
 .anipang {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.anipang-score-value {
+  display: inline-block;
+  animation: scoreBumpAP 0.3s ease;
 }
 
 .anipang-hud {
@@ -46,6 +67,11 @@
 
 .ap-cell.selected {
   box-shadow: 0 0 0 3px var(--accent) inset;
+  animation: apPulse 0.5s ease-in-out infinite;
+}
+
+.ap-cell.shaking {
+  animation: apShake 0.18s ease;
 }
 
 .anipang-overlay {
@@ -69,6 +95,7 @@
   padding: 24px 24px;
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
+  animation: popIn 0.25s ease both;
 }
 
 .anipang-result input {
