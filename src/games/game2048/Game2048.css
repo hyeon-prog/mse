@@ -1,0 +1,27 @@
+.game2048-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  width: min(90vw, 420px);
+  aspect-ratio: 1;
+  padding: var(--space-2);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+}
+
+.game2048-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-raised);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  color: var(--accent-2048);
+}
+
+.game2048-tile:not([data-value]) {
+  background: rgba(255, 255, 255, 0.02);
+}

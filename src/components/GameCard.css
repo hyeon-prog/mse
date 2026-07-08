@@ -1,0 +1,65 @@
+.game-card {
+  --card-accent: var(--accent-2048);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  min-height: 190px;
+  text-decoration: none;
+  color: var(--text-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-top: 4px solid var(--card-accent);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  border-color: var(--card-accent);
+}
+
+.game-card__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.game-card__icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.game-card__badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-chip);
+  padding: 2px 8px;
+}
+
+.game-card__title {
+  font-size: 1.25rem;
+  color: var(--card-accent);
+}
+
+.game-card__desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.game-card__cta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.game-card:hover .game-card__cta {
+  color: var(--card-accent);
+}
