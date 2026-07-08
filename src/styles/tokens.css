@@ -27,6 +27,8 @@
   --accent-apple-dim: #3d2222;
   --accent-tetris: #4cc9f0;
   --accent-tetris-dim: #1f3a44;
+  --accent-domino: #c9a86a;
+  --accent-domino-dim: #4a3418;
 
   /* type */
   --font-display: "Space Grotesk", "Pretendard", system-ui, sans-serif;
