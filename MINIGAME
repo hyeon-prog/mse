@@ -1,6 +1,0 @@
-npm install        # 정상 설치되는지 확인
-gh repo create mini-game-platform --public --source=. --push
-# gh CLI가 없다면: GitHub에서 빈 저장소 생성 후
-git remote add origin https://github.com/<계정>/mini-game-platform.git
-git push -u origin main
-git push origin game/2048 game/apple-game game/tetris
