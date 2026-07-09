@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import { sfx } from '../../utils/sound.js'
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH, createGame, render, update } from './infiniteStairsLogic.js'
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH, createGame, moveLane, render, update } from './infiniteStairsLogic.js'
 import './InfiniteStairs.css'
 
 const BEST_KEY = 'mse-infinite-stairs-best'
@@ -11,8 +11,6 @@ export default function InfiniteStairs() {
   const gameRef = useRef(null)
   const rafRef = useRef(null)
   const lastTsRef = useRef(0)
-  const keysHeldRef = useRef(new Set())
-  const touchSideRef = useRef(0)
   const bestScoreRef = useRef(0)
 
   const [phase, setPhase] = useState('idle')
@@ -22,38 +20,29 @@ export default function InfiniteStairs() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  const getMoveDir = useCallback(() => {
-    if (keysHeldRef.current.has('ArrowLeft')) return -1
-    if (keysHeldRef.current.has('ArrowRight')) return 1
-    return touchSideRef.current
-  }, [])
-
-  const loop = useCallback(
-    (ts) => {
-      const dt = Math.min(0.05, (ts - (lastTsRef.current || ts)) / 1000)
-      lastTsRef.current = ts
-      const game = gameRef.current
-      const ctx = canvasRef.current?.getContext('2d')
-      if (game && ctx) {
-        if (game.status === 'playing') {
-          update(game, dt, getMoveDir())
-          if (game.status === 'over') {
-            sfx.lose()
-            setFinalScore(game.score)
-            if (game.score > bestScoreRef.current) {
-              bestScoreRef.current = game.score
-              localStorage.setItem(BEST_KEY, String(game.score))
-              setBestScore(game.score)
-            }
-            setPhase('over')
+  const loop = useCallback((ts) => {
+    const dt = Math.min(0.05, (ts - (lastTsRef.current || ts)) / 1000)
+    lastTsRef.current = ts
+    const game = gameRef.current
+    const ctx = canvasRef.current?.getContext('2d')
+    if (game && ctx) {
+      if (game.status === 'playing') {
+        update(game, dt)
+        if (game.status === 'over') {
+          sfx.lose()
+          setFinalScore(game.score)
+          if (game.score > bestScoreRef.current) {
+            bestScoreRef.current = game.score
+            localStorage.setItem(BEST_KEY, String(game.score))
+            setBestScore(game.score)
           }
+          setPhase('over')
         }
-        render(ctx, game)
       }
-      rafRef.current = requestAnimationFrame(loop)
-    },
-    [getMoveDir],
-  )
+      render(ctx, game)
+    }
+    rafRef.current = requestAnimationFrame(loop)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -75,20 +64,17 @@ export default function InfiniteStairs() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      if (e.repeat) return
+      if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        keysHeldRef.current.add(e.key)
+        moveLane(gameRef.current, -1)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        moveLane(gameRef.current, 1)
       }
     }
-    const onKeyUp = (e) => {
-      keysHeldRef.current.delete(e.key)
-    }
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
-    }
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
   const startGame = () => {
@@ -112,29 +98,13 @@ export default function InfiniteStairs() {
     }
   }
 
-  const setTouchSide = (side) => {
-    touchSideRef.current = side
-  }
-
   return (
     <div className="infinite-stairs">
       <div className="stairs-canvas-wrap">
         <canvas ref={canvasRef} className="stairs-canvas" />
 
-        <div
-          className="stairs-touch-zone left"
-          onPointerDown={() => setTouchSide(-1)}
-          onPointerUp={() => setTouchSide(0)}
-          onPointerLeave={() => setTouchSide(0)}
-          onPointerCancel={() => setTouchSide(0)}
-        />
-        <div
-          className="stairs-touch-zone right"
-          onPointerDown={() => setTouchSide(1)}
-          onPointerUp={() => setTouchSide(0)}
-          onPointerLeave={() => setTouchSide(0)}
-          onPointerCancel={() => setTouchSide(0)}
-        />
+        <div className="stairs-touch-zone left" onPointerDown={() => moveLane(gameRef.current, -1)} />
+        <div className="stairs-touch-zone right" onPointerDown={() => moveLane(gameRef.current, 1)} />
 
         {phase === 'idle' && (
           <div className="infinite-stairs-overlay">
