@@ -294,13 +294,6 @@ export default function DominoOnline({ initialRoomCode, onBack }) {
           {view.isDrawing && <span className="domino-drawing-indicator"> · 카드 가져가는 중...</span>}
         </span>
         <span>보유고 {view.boneyardCount}장</span>
-        <span className="domino-hud-scores">
-          {view.playerOrder.map((id) => (
-            <span key={id}>
-              {label(id)} {view.scores[id]}
-            </span>
-          ))}
-        </span>
         <button className="btn btn-secondary" onClick={() => { leaveRoom(); }}>
           나가기
         </button>
