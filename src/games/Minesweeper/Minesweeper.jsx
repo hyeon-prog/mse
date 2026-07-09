@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getBestTime, saveBestTimeIfBetter } from '../../utils/minesweeperRecords.js'
+import { sfx } from '../../utils/sound.js'
 import {
   DIFFICULTIES,
   checkWin,
@@ -45,6 +46,7 @@ export default function Minesweeper() {
 
   const handleWin = (finalBoard, elapsed) => {
     clearInterval(timerRef.current)
+    sfx.win()
     setBoard(finalBoard)
     setStatus('won')
     setBestTime(saveBestTimeIfBetter(difficulty, elapsed))
@@ -52,6 +54,7 @@ export default function Minesweeper() {
 
   const handleLoss = (finalBoard) => {
     clearInterval(timerRef.current)
+    sfx.explosion()
     setBoard(revealAllMines(finalBoard))
     setStatus('lost')
   }
@@ -63,6 +66,7 @@ export default function Minesweeper() {
     if (!board) {
       const fresh = createBoard(config.rows, config.cols, config.mines, r, c)
       const revealed = revealCell(fresh, r, c)
+      sfx.click()
       setBoard(revealed)
       setSeconds(0)
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000)
@@ -78,6 +82,7 @@ export default function Minesweeper() {
       return
     }
 
+    sfx.click()
     const next = revealCell(board, r, c)
     setBoard(next)
     if (checkWin(next)) handleWin(next, seconds)
@@ -86,6 +91,7 @@ export default function Minesweeper() {
   const handleFlag = (e, r, c) => {
     e.preventDefault()
     if (status !== 'playing' || !board) return
+    sfx.flag()
     setBoard(toggleFlag(board, r, c))
   }
 

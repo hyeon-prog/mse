@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { isMuted, toggleMuted } from '../utils/sound.js'
 
 const links = [
   { to: '/', label: '로비', end: true },
@@ -7,6 +9,12 @@ const links = [
 ]
 
 export default function Navbar() {
+  const [muted, setMutedState] = useState(isMuted)
+
+  const handleToggleMute = () => {
+    setMutedState(toggleMuted())
+  }
+
   return (
     <header className="navbar">
       <NavLink to="/" className="navbar-brand" end>
@@ -23,6 +31,15 @@ export default function Navbar() {
             {link.label}
           </NavLink>
         ))}
+        <button
+          type="button"
+          className="navbar-mute"
+          onClick={handleToggleMute}
+          aria-label={muted ? '소리 켜기' : '소리 끄기'}
+          title={muted ? '소리 켜기' : '소리 끄기'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
       </nav>
     </header>
   )

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import { sfx } from '../../utils/sound.js'
 import {
   COLS,
   ROWS,
@@ -85,8 +86,13 @@ export default function Tetris() {
 
   useEffect(() => {
     if (game.status !== 'clearing') return
+    sfx.lineClear()
     const id = setTimeout(() => setGame((prev) => resolveClear(prev)), CLEAR_FLASH_MS)
     return () => clearTimeout(id)
+  }, [game.status])
+
+  useEffect(() => {
+    if (game.status === 'over') sfx.lose()
   }, [game.status])
 
   useEffect(() => {
@@ -120,6 +126,7 @@ export default function Tetris() {
           return prev
         })
       } else if (e.key === ' ') {
+        sfx.drop()
         setGame((prev) => hardDrop(prev))
       }
     }

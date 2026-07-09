@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import { sfx } from '../../utils/sound.js'
 import { addRandomTile, canMove, createEmptyGrid, move } from './game2048Logic.js'
 import './Game2048.css'
 
@@ -39,18 +40,19 @@ export default function Game2048() {
 
   const handleMove = (direction) => {
     if (status !== 'playing') return
-    setBoard((prev) => {
-      const result = move(prev.grid, direction)
-      if (!result.changed) return prev
-      const nextGrid = addRandomTile(result.grid)
-      const newTiles = new Set(diffPositions(result.grid, nextGrid))
-      const merged = new Set(result.mergedCells.map(({ r, c }) => `${r}-${c}`))
-      setScore((s) => s + result.gained)
-      if (!canMove(nextGrid)) {
-        setStatus('over')
-      }
-      return { grid: nextGrid, merged, newTiles }
-    })
+    const result = move(board.grid, direction)
+    if (!result.changed) return
+
+    const nextGrid = addRandomTile(result.grid)
+    const newTiles = new Set(diffPositions(result.grid, nextGrid))
+    const merged = new Set(result.mergedCells.map(({ r, c }) => `${r}-${c}`))
+    if (result.mergedCells.length > 0) sfx.merge()
+    setScore((s) => s + result.gained)
+    if (!canMove(nextGrid)) {
+      sfx.lose()
+      setStatus('over')
+    }
+    setBoard({ grid: nextGrid, merged, newTiles })
   }
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import { sfx } from '../../utils/sound.js'
 import './AppleGame.css'
 
 const ROWS = 10
@@ -34,6 +35,7 @@ export default function AppleGame() {
   useEffect(() => {
     if (status !== 'playing') return
     if (timeLeft <= 0) {
+      sfx.lose()
       setStatus('over')
       return
     }
@@ -72,53 +74,54 @@ export default function AppleGame() {
   const handlePointerUp = () => {
     if (!draggingRef.current) return
     draggingRef.current = false
-    setSelection((sel) => {
-      if (!sel) return null
-      const minR = Math.min(sel.r1, sel.r2)
-      const maxR = Math.max(sel.r1, sel.r2)
-      const minC = Math.min(sel.c1, sel.c2)
-      const maxC = Math.max(sel.c1, sel.c2)
+    const sel = selection
+    setSelection(null)
+    if (!sel) return
 
-      let sum = 0
-      let count = 0
-      const indices = []
-      for (let r = minR; r <= maxR; r++) {
-        for (let c = minC; c <= maxC; c++) {
-          const idx = indexOf(r, c)
-          const cellData = board[idx]
-          if (!cellData.removed) {
-            sum += cellData.value
-            count += 1
-            indices.push(idx)
-          }
+    const minR = Math.min(sel.r1, sel.r2)
+    const maxR = Math.max(sel.r1, sel.r2)
+    const minC = Math.min(sel.c1, sel.c2)
+    const maxC = Math.max(sel.c1, sel.c2)
+
+    let sum = 0
+    let count = 0
+    const indices = []
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        const idx = indexOf(r, c)
+        const cellData = board[idx]
+        if (!cellData.removed) {
+          sum += cellData.value
+          count += 1
+          indices.push(idx)
         }
       }
+    }
 
-      if (sum === 10 && count > 0) {
+    if (sum === 10 && count > 0) {
+      sfx.pop()
+      setBoard((prev) => {
+        const next = [...prev]
+        indices.forEach((idx) => {
+          next[idx] = { ...next[idx], popping: true }
+        })
+        return next
+      })
+      setScore((s) => s + count)
+      setTimeout(() => {
         setBoard((prev) => {
           const next = [...prev]
           indices.forEach((idx) => {
-            next[idx] = { ...next[idx], popping: true }
+            next[idx] = { ...next[idx], removed: true, popping: false }
           })
           return next
         })
-        setScore((s) => s + count)
-        setTimeout(() => {
-          setBoard((prev) => {
-            const next = [...prev]
-            indices.forEach((idx) => {
-              next[idx] = { ...next[idx], removed: true, popping: false }
-            })
-            return next
-          })
-        }, 180)
-      } else if (count > 0) {
-        setInvalidCells(indices)
-        setTimeout(() => setInvalidCells([]), 220)
-      }
-
-      return null
-    })
+      }, 180)
+    } else if (count > 0) {
+      sfx.invalid()
+      setInvalidCells(indices)
+      setTimeout(() => setInvalidCells([]), 220)
+    }
   }
 
   useEffect(() => {

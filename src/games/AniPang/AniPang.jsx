@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import { sfx } from '../../utils/sound.js'
 import {
   COLS,
   GAME_DURATION,
@@ -38,6 +39,7 @@ export default function AniPang() {
 
   useEffect(() => {
     if (game.status === 'playing' && game.timeLeft === 0) {
+      sfx.lose()
       setGame((prev) => ({ ...prev, status: 'over' }))
     }
   }, [game.timeLeft, game.status])
@@ -62,9 +64,11 @@ export default function AniPang() {
 
     if (wouldMatch(game.board, selected.r, selected.c, r, c)) {
       const swapped = swapCells(game.board, selected.r, selected.c, r, c)
-      const { board: resolved, score: gained } = resolveCascades(swapped)
+      const { board: resolved, score: gained, combo } = resolveCascades(swapped)
+      sfx.combo(combo)
       setGame((prev) => ({ ...prev, board: resolved, score: prev.score + gained }))
     } else {
+      sfx.invalid()
       const keys = [`${selected.r}-${selected.c}`, `${r}-${c}`]
       setShaking(keys)
       setTimeout(() => setShaking([]), 220)

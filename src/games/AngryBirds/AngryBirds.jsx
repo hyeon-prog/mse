@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import { sfx } from '../../utils/sound.js'
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
@@ -25,6 +26,7 @@ export default function AngryBirds() {
   const [saveError, setSaveError] = useState('')
   const draggingRef = useRef(false)
   const arenaRef = useRef(null)
+  const prevStateRef = useRef(state)
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -32,6 +34,24 @@ export default function AngryBirds() {
     }, TICK_MS)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    const prev = prevStateRef.current
+    const curr = state
+
+    if (curr.pigs.length < prev.pigs.length) sfx.pop()
+
+    const prevHitCount = prev.blocks.filter((b) => b.hit).length
+    const currHitCount = curr.blocks.filter((b) => b.hit).length
+    if (currHitCount > prevHitCount) sfx.hit()
+
+    if (prev.status !== curr.status) {
+      if (curr.status === 'level-clear' || curr.status === 'game-won') sfx.win()
+      else if (curr.status === 'level-failed') sfx.lose()
+    }
+
+    prevStateRef.current = curr
+  }, [state])
 
   const getRelativePoint = (clientX, clientY) => {
     const rect = arenaRef.current.getBoundingClientRect()
@@ -60,15 +80,16 @@ export default function AngryBirds() {
   const handlePointerUp = () => {
     if (!draggingRef.current) return
     draggingRef.current = false
-    setPull((prevPull) => {
-      const len = Math.hypot(prevPull.dx, prevPull.dy)
-      if (len > 8) {
-        const vx = -prevPull.dx * LAUNCH_MULTIPLIER
-        const vy = -prevPull.dy * LAUNCH_MULTIPLIER
-        setState((prev) => launch(prev, vx, vy))
-      }
-      return { dx: 0, dy: 0 }
-    })
+    const prevPull = pull
+    setPull({ dx: 0, dy: 0 })
+
+    const len = Math.hypot(prevPull.dx, prevPull.dy)
+    if (len > 8) {
+      sfx.launch()
+      const vx = -prevPull.dx * LAUNCH_MULTIPLIER
+      const vy = -prevPull.dy * LAUNCH_MULTIPLIER
+      setState((prev) => launch(prev, vx, vy))
+    }
   }
 
   useEffect(() => {

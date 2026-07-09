@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
+import { sfx } from '../../utils/sound.js'
 import { ARENA_WIDTH, ROUNDS_TO_WIN, TICK_INTERVAL_MS, createFight, tick } from './tekkenLogic.js'
 import './Tekken.css'
+
+function playActionSfx(action, attackType) {
+  if (action === 'attack') {
+    if (attackType === 'kick') sfx.kick()
+    else sfx.punch()
+  } else if (action === 'block') {
+    sfx.block()
+  } else if (action === 'jump') {
+    sfx.jump()
+  } else if (action === 'hit') {
+    sfx.hit()
+  }
+}
 
 const P1_KEYS = { left: 'a', right: 'd', jump: 'w', block: 's', punch: 'f', kick: 'g' }
 const P2_KEYS = { left: 'arrowleft', right: 'arrowright', jump: 'arrowup', block: 'arrowdown', punch: 'k', kick: 'l' }
@@ -28,6 +42,19 @@ export default function Tekken() {
   const [match, setMatch] = useState(initMatch)
   const heldKeysRef = useRef(new Set())
   const pressedRef = useRef({ p1: { jump: false, punch: false, kick: false }, p2: { jump: false, punch: false, kick: false } })
+  const prevFightRef = useRef(match.fight)
+
+  useEffect(() => {
+    const prev = prevFightRef.current
+    const curr = match.fight
+    if (prev.p1.action !== curr.p1.action) playActionSfx(curr.p1.action, curr.p1.attackType)
+    if (prev.p2.action !== curr.p2.action) playActionSfx(curr.p2.action, curr.p2.attackType)
+    prevFightRef.current = curr
+  }, [match.fight])
+
+  useEffect(() => {
+    if (match.status === 'match-over') sfx.win()
+  }, [match.status])
 
   useEffect(() => {
     const onKeyDown = (e) => {
