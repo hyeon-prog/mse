@@ -6,6 +6,7 @@ import AniPang from './AniPang/AniPang.jsx'
 import Tekken from './Tekken/Tekken.jsx'
 import AngryBirds from './AngryBirds/AngryBirds.jsx'
 import Domino from './Domino/Domino.jsx'
+import InfiniteStairs from './InfiniteStairs/InfiniteStairs.jsx'
 
 export const games = [
   {
@@ -63,6 +64,13 @@ export const games = [
     description: '더블식스 도미노 28피스로 AI 2~4인전. 숫자를 이어붙여 손패를 먼저 털어내세요.',
     icon: '🁻',
     component: Domino,
+  },
+  {
+    id: 'infinite-stairs',
+    name: '무한의 계단',
+    description: '다음 계단이 있는 방향으로 박자에 맞춰 ← → 를 눌러 끝없이 올라가보세요.',
+    icon: '🪜',
+    component: InfiniteStairs,
   },
 ]
 
