@@ -61,23 +61,100 @@
 
 .ab-bird {
   position: absolute;
-  width: 28px;
-  height: 28px;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0 var(--pixel-shadow);
+}
+
+.ab-bird-glyph {
+  display: block;
+  transform: scaleX(-1); /* 발사 방향(오른쪽)을 보도록 좌우 반전 */
 }
 
 .ab-bird.draggable {
   cursor: grab;
 }
 
+.ab-bird.type-red {
+  background: #ff5c5c;
+}
+
+.ab-bird.type-yellow {
+  background: #ffd93d;
+}
+
+.ab-bird.type-blue {
+  background: #3aa7ff;
+}
+
+.ab-bird.type-black {
+  background: #4a4a4a;
+}
+
 .ab-block {
   position: absolute;
-  background: #b08d57;
   border: 2px solid var(--border-color);
+  transition: opacity 0.15s ease;
+}
+
+.ab-block.material-wood {
+  background: #b08d57;
+}
+
+.ab-block.material-stone {
+  background: #8a8a8a;
+  border-color: #555;
+}
+
+.ab-block.material-glass {
+  background: rgba(191, 230, 255, 0.55);
+  border-color: #7fb8e0;
+}
+
+.ab-shatter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ab-shard {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -4px;
+  border: 1px solid var(--border-color);
+  animation: ab-shard-fly 0.42s ease-out forwards;
+}
+
+.ab-shard.material-wood {
+  background: #b08d57;
+}
+
+.ab-shard.material-stone {
+  background: #8a8a8a;
+}
+
+.ab-shard.material-glass {
+  background: rgba(191, 230, 255, 0.85);
+}
+
+@keyframes ab-shard-fly {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--tx), var(--ty)) rotate(200deg);
+    opacity: 0;
+  }
 }
 
 .ab-pig {
