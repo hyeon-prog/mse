@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>네온 핀볼</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #08040f;
+    color: #f3ecff;
+    font-family: "Courier New", monospace;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #app {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  #hud {
+    width: min(96vw, 420px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    letter-spacing: 1px;
+    padding: 0 4px;
+  }
+
+  #hud .hud-block { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  #hud .hud-label { font-size: 10px; color: #9c8fc9; }
+  #score { color: #33e6ff; font-weight: bold; font-size: 16px; text-shadow: 0 0 6px #33e6ff; }
+  #best { color: #ffd23d; font-size: 11px; }
+
+  #lives { display: flex; gap: 4px; }
+  .life-ball {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #ff2f92;
+    box-shadow: 0 0 6px #ff2f92;
+  }
+  .life-ball.lost { background: #322447; box-shadow: none; }
+
+  #stage-wrap {
+    position: relative;
+    width: min(92vw, 400px);
+    aspect-ratio: 400 / 700;
+    max-height: 82vh;
+    border: 3px solid #6b4fb0;
+    border-radius: 10px;
+    box-shadow: 0 0 0 3px #1c1230, 0 0 24px rgba(120, 70, 255, 0.45);
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  #table {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #launchGaugeWrap {
+    position: absolute;
+    left: 6px;
+    bottom: 8px;
+    width: 14px;
+    height: 40%;
+    border: 2px solid #6b4fb0;
+    border-radius: 6px;
+    background: rgba(10, 6, 20, 0.6);
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  #launchGauge {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to top, #ff2f92, #ffd23d);
+    box-shadow: 0 0 10px #ff2f92;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 2, 12, 0.82);
+    text-align: center;
+    z-index: 5;
+  }
+
+  .overlay.hidden { display: none; }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: #150b2b;
+    border: 2px solid #6b4fb0;
+    border-radius: 10px;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+    padding: 22px 22px;
+    max-width: 82%;
+  }
+
+  .panel h1 { margin: 0; font-size: 20px; color: #ff2f92; text-shadow: 0 0 8px #ff2f92; }
+  .panel p { margin: 0; font-size: 12px; color: #cbb8ff; line-height: 1.6; }
+  .panel .best-line { color: #ffd23d; font-size: 13px; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 1px;
+    padding: 10px 22px;
+    border: 2px solid #33e6ff;
+    border-radius: 6px;
+    background: #0f1a33;
+    color: #33e6ff;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(51, 230, 255, 0.5);
+  }
+  .btn:active { transform: translateY(1px); }
+
+  #touchControls {
+    width: min(92vw, 400px);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .touch-zone {
+    flex: 1;
+    height: 64px;
+    border: 2px solid #4b3a78;
+    border-radius: 10px;
+    background: rgba(30, 18, 55, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #9c8fc9;
+    touch-action: none;
+  }
+
+  .touch-zone.active {
+    background: rgba(255, 47, 146, 0.25);
+    border-color: #ff2f92;
+    color: #ffe0f0;
+  }
+
+  #touchLaunch.active {
+    background: rgba(51, 230, 255, 0.25);
+    border-color: #33e6ff;
+    color: #dffcff;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #touchControls { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div id="hud">
+      <div class="hud-block">
+        <span class="hud-label">SCORE</span>
+        <span id="score">0</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">LIVES</span>
+        <div id="lives">
+          <div class="life-ball"></div>
+          <div class="life-ball"></div>
+          <div class="life-ball"></div>
+        </div>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">BEST</span>
+        <span id="best">0</span>
+      </div>
+    </div>
+
+    <div id="stage-wrap">
+      <canvas id="table"></canvas>
+      <div id="launchGaugeWrap"><div id="launchGauge"></div></div>
+
+      <div id="startScreen" class="overlay">
+        <div class="panel">
+          <h1>네온 핀볼</h1>
+          <p>
+            ← / Z : 왼쪽 플리퍼&nbsp;&nbsp;&nbsp;→ / / : 오른쪽 플리퍼<br />
+            스페이스바를 누르고 있다가 떼면 공이 발사됩니다.<br />
+            범퍼·슬링샷·타겟을 맞춰 점수를 쌓고, 짧은 시간 연속으로 맞추면 콤보 배율이 붙습니다.
+          </p>
+          <p class="best-line">최고 점수: <span id="startBest">0</span></p>
+          <button class="btn" id="startBtn">시작하기</button>
+        </div>
+      </div>
+
+      <div id="gameOverScreen" class="overlay hidden">
+        <div class="panel">
+          <h1>GAME OVER</h1>
+          <p>최종 점수: <span id="finalScore">0</span></p>
+          <p class="best-line">최고 점수: <span id="finalBest">0</span></p>
+          <button class="btn" id="retryBtn">다시하기</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="touchControls">
+      <div id="touchLeft" class="touch-zone">◀ 플리퍼</div>
+      <div id="touchLaunch" class="touch-zone">누르고 떼기 = 발사</div>
+      <div id="touchRight" class="touch-zone">플리퍼 ▶</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+  <script>
+  (function () {
+    'use strict'
+
+    var Matter = window.Matter
+    var Engine = Matter.Engine
+    var World = Matter.World
+    var Bodies = Matter.Bodies
+    var Body = Matter.Body
+    var Constraint = Matter.Constraint
+    var Events = Matter.Events
+    var Composite = Matter.Composite
+
+    var TABLE_WIDTH = 400
+    var TABLE_HEIGHT = 700
+    var WALL = 14
+    var LANE_W = 46
+    var LANE_DIVIDER_X = TABLE_WIDTH - WALL - LANE_W
+    var LANE_TOP_GAP_Y = 150
+    var FIELD_LEFT = WALL
+    var FIELD_RIGHT = LANE_DIVIDER_X
+    var FLIPPER_Y = TABLE_HEIGHT - 100
+    var LANE_BOTTOM_Y = FLIPPER_Y + 25
+    var LANE_FLOOR_Y = TABLE_HEIGHT - 8
+    var LANE_CENTER_X = TABLE_WIDTH - WALL - LANE_W / 2
+    var PLUNGER_REST_Y = LANE_FLOOR_Y - 26
+
+    var BALL_RADIUS = 10
+    var FLIPPER_LENGTH = 88
+    var FLIPPER_THICKNESS = 18
+    var FLIPPER_ANGLE = 0.55
+    var FLIPPER_ACTIVE_SPEED = 0.5
+    var FLIPPER_RETURN_SPEED = 0.28
+    var MAX_BALL_SPEED = 22
+    var MIN_LAUNCH_SPEED = 9
+    var MAX_LAUNCH_SPEED = 21
+    var CHARGE_TIME_MS = 1100
+    var FIXED_DT = 1000 / 60
+    var COMBO_WINDOW_MS = 1300
+    var BONUS_DURATION_MS = 12000
+    var TARGET_RESET_DELAY_MS = 1600
+    var DRAIN_Y = TABLE_HEIGHT - 6
+
+    var BUMPER_SCORE = 100
+    var SLING_SCORE = 50
+    var TARGET_SCORE = 200
+    var ALL_TARGETS_BONUS = 1000
+
+    var COLORS = {
+      bumper: ['#33e6ff', '#ff2f92', '#ffd23d', '#38f9a4'],
+      sling: '#38f9a4',
+      targetOff: '#4b3a78',
+      targetOn: '#ffd23d',
+      wall: '#6b4fb0',
+      ball: '#f3ecff',
+    }
+
+    var canvas = document.getElementById('table')
+    var ctx = canvas.getContext('2d')
+    var stageWrap = document.getElementById('stage-wrap')
+    var scoreEl = document.getElementById('score')
+    var bestEl = document.getElementById('best')
+    var startBestEl = document.getElementById('startBest')
+    var finalScoreEl = document.getElementById('finalScore')
+    var finalBestEl = document.getElementById('finalBest')
+    var livesEls = document.querySelectorAll('.life-ball')
+    var launchGaugeEl = document.getElementById('launchGauge')
+    var startScreenEl = document.getElementById('startScreen')
+    var gameOverScreenEl = document.getElementById('gameOverScreen')
+    var startBtn = document.getElementById('startBtn')
+    var retryBtn = document.getElementById('retryBtn')
+    var touchLeftEl = document.getElementById('touchLeft')
+    var touchRightEl = document.getElementById('touchRight')
+    var touchLaunchEl = document.getElementById('touchLaunch')
+
+    var BEST_KEY = 'mse-pinball-best'
+
+    function wallFromPoints(x1, y1, x2, y2, thickness, extra) {
+      var cx = (x1 + x2) / 2
+      var cy = (y1 + y2) / 2
+      var length = Math.hypot(x2 - x1, y2 - y1)
+      var angle = Math.atan2(y2 - y1, x2 - x1)
+      var opts = Object.assign({ isStatic: true, angle: angle, restitution: 0.35, friction: 0.2, render: {} }, extra || {})
+      return Bodies.rectangle(cx, cy, length, thickness, opts)
+    }
+
+    var engine = Engine.create()
+    engine.world.gravity.y = 1.2
+    engine.world.gravity.x = 0
+    var world = engine.world
+
+    var state = {
+      phase: 'idle',
+      score: 0,
+      best: Number(localStorage.getItem(BEST_KEY)) || 0,
+      lives: 3,
+      combo: 0,
+      lastHitAt: 0,
+      bonusMultiplierUntil: 0,
+      targetsResetAt: 0,
+      charging: false,
+      charge: 0,
+      shakeMag: 0,
+      offsetX: 0,
+      offsetY: 0,
+    }
+
+    var balls = []
+    var particles = []
+    var popups = []
+    var flippers = []
+    var bumpers = []
+    var slingshots = []
+    var targets = []
+
+    var keys = new Set()
+    var touchLeftDown = false
+    var touchRightDown = false
+
+    function buildTable() {
+      Composite.clear(world, false)
+
+      var statics = []
+
+      statics.push(Bodies.rectangle(TABLE_WIDTH / 2, WALL / 2, TABLE_WIDTH, WALL, { isStatic: true }))
+      statics.push(Bodies.rectangle(WALL / 2, TABLE_HEIGHT / 2, WALL, TABLE_HEIGHT, { isStatic: true }))
+      statics.push(Bodies.rectangle(TABLE_WIDTH - WALL / 2, TABLE_HEIGHT / 2, WALL, TABLE_HEIGHT, { isStatic: true }))
+
+      statics.push(Bodies.rectangle(LANE_CENTER_X, LANE_FLOOR_Y, LANE_W, 12, { isStatic: true }))
+
+      statics.push(
+        Bodies.rectangle(
+          LANE_DIVIDER_X,
+          (LANE_TOP_GAP_Y + LANE_BOTTOM_Y) / 2,
+          10,
+          LANE_BOTTOM_Y - LANE_TOP_GAP_Y,
+          { isStatic: true },
+        ),
+      )
+      statics.push(
+        wallFromPoints(LANE_DIVIDER_X + 10, LANE_TOP_GAP_Y - 2, LANE_DIVIDER_X - 56, LANE_TOP_GAP_Y - 48, 9),
+      )
+
+      statics.push(wallFromPoints(FIELD_LEFT, 66, 66, WALL, 10))
+      statics.push(wallFromPoints(FIELD_LEFT + 4, LANE_BOTTOM_Y, 85, LANE_BOTTOM_Y, 10))
+      // 오른쪽 플리퍼는 피벗(x=259)에서 왼쪽으로만 뻗어있어서, 피벗 오른쪽은 원래 플리퍼가
+      // 전혀 덮지 못하는 영역입니다. 에이프런을 피벗 근처(255)부터 시작해야 그 사이로
+      // 공이 아무 반응 없이 그냥 빠져나가는 구멍이 생기지 않습니다.
+      statics.push(wallFromPoints(255, LANE_BOTTOM_Y, LANE_DIVIDER_X, LANE_BOTTOM_Y, 10))
+
+      var leftPivot = { x: 95, y: FLIPPER_Y }
+      var rightPivot = { x: 259, y: FLIPPER_Y }
+      flippers.push(createFlipper(leftPivot, 'left'))
+      flippers.push(createFlipper(rightPivot, 'right'))
+
+      var bumperSpecs = [
+        { x: 110, y: 250, r: 26 },
+        { x: 232, y: 218, r: 26 },
+        { x: 172, y: 320, r: 24 },
+      ]
+      bumperSpecs.forEach(function (spec, i) {
+        var body = Bodies.circle(spec.x, spec.y, spec.r, {
+          isStatic: true,
+          restitution: 1,
+          label: 'bumper',
+        })
+        body.kind = 'bumper'
+        body.color = COLORS.bumper[i % COLORS.bumper.length]
+        body.flashUntil = 0
+        bumpers.push(body)
+        statics.push(body)
+      })
+
+      var slingSpecs = [
+        { x: 72, y: 528, angle: 0.32, side: 'left' },
+        { x: 268, y: 528, angle: -0.32, side: 'right' },
+      ]
+      slingSpecs.forEach(function (spec) {
+        var body = Bodies.polygon(spec.x, spec.y, 3, 30, {
+          isStatic: true,
+          angle: spec.angle,
+          restitution: 0.6,
+          label: 'slingshot',
+        })
+        body.kind = 'slingshot'
+        body.color = COLORS.sling
+        body.flashUntil = 0
+        slingshots.push(body)
+        statics.push(body)
+      })
+
+      var targetSpecs = [
+        { x: 58, y: 148, r: 13 },
+        { x: 177, y: 116, r: 13 },
+        { x: 296, y: 148, r: 13 },
+      ]
+      targetSpecs.forEach(function (spec) {
+        var body = Bodies.circle(spec.x, spec.y, spec.r, {
+          isStatic: true,
+          restitution: 0.4,
+          label: 'target',
+        })
+        body.kind = 'target'
+        body.hit = false
+        targets.push(body)
+        statics.push(body)
+      })
+
+      World.add(world, statics)
+      flippers.forEach(function (f) {
+        World.add(world, [f.body, f.constraint])
+      })
+    }
+
+    function createFlipper(pivot, side) {
+      var dir = side === 'left' ? 1 : -1
+      var centroidX = pivot.x + dir * (FLIPPER_LENGTH / 2)
+      var body = Bodies.rectangle(centroidX, pivot.y, FLIPPER_LENGTH, FLIPPER_THICKNESS, {
+        density: 0.025,
+        friction: 0.4,
+        restitution: 0.25,
+        chamfer: { radius: FLIPPER_THICKNESS / 2 },
+        label: 'flipper',
+      })
+      var restAngle = dir * FLIPPER_ANGLE
+      var activeAngle = -restAngle
+      Body.setAngle(body, restAngle)
+      var pivotLocalX = -dir * (FLIPPER_LENGTH / 2)
+      var constraint = Constraint.create({
+        pointA: { x: pivot.x, y: pivot.y },
+        bodyB: body,
+        pointB: { x: pivotLocalX, y: 0 },
+        length: 0,
+        stiffness: 1,
+        damping: 0.15,
+      })
+      return {
+        body: body,
+        constraint: constraint,
+        side: side,
+        restAngle: restAngle,
+        activeAngle: activeAngle,
+        pressed: false,
+      }
+    }
+
+    function updateFlippers() {
+      flippers.forEach(function (f) {
+        f.pressed =
+          f.side === 'left'
+            ? keys.has('ArrowLeft') || keys.has('KeyZ') || touchLeftDown
+            : keys.has('ArrowRight') || keys.has('Slash') || touchRightDown
+
+        // 목표 각도로 향하는 각속도를 매 프레임 직접 설정합니다 (Body.setAngle로 순간 이동시키면
+        // 핀 조인트(pointB 고정 constraint)와 매 프레임 충돌해 미세한 떨림이 생기므로 사용하지 않습니다).
+        var target = f.pressed ? f.activeAngle : f.restAngle
+        var diff = target - f.body.angle
+        var maxSpeed = f.pressed ? FLIPPER_ACTIVE_SPEED : FLIPPER_RETURN_SPEED
+        var angularVel = diff * 14
+        if (angularVel > maxSpeed) angularVel = maxSpeed
+        if (angularVel < -maxSpeed) angularVel = -maxSpeed
+        Body.setAngularVelocity(f.body, angularVel)
+      })
+    }
+
+    function spawnBall() {
+      var ball = Bodies.circle(LANE_CENTER_X, PLUNGER_REST_Y, BALL_RADIUS, {
+        restitution: 0.68,
+        friction: 0.02,
+        frictionAir: 0.0015,
+        density: 0.0015,
+        label: 'ball',
+      })
+      World.add(world, ball)
+      balls.push(ball)
+    }
+
+    // 발사 레인 안쪽(플리퍼보다 아래, 발사 통로 쪽)에 있으면 언제든 재발사가 가능하도록
+    // 위치 기반으로 판정합니다. 한 번 쓰고 버리는 플래그 방식은 공이 필드에서 튕기다가
+    // 다시 레인으로 굴러 들어왔을 때 영원히 재발사가 안 되는 상태를 만들 수 있습니다.
+    function ballInLaunchZone(ball) {
+      return ball.position.x > LANE_DIVIDER_X && ball.position.y > FLIPPER_Y
+    }
+
+    function clampBallSpeed(ball) {
+      var vx = ball.velocity.x
+      var vy = ball.velocity.y
+      var speed = Math.hypot(vx, vy)
+      if (speed > MAX_BALL_SPEED) {
+        var scale = MAX_BALL_SPEED / speed
+        Body.setVelocity(ball, { x: vx * scale, y: vy * scale })
+      }
+    }
+
+    function tryLaunch() {
+      if (!state.charging) return
+      state.charging = false
+      var ball = balls[0]
+      if (ball && ballInLaunchZone(ball)) {
+        var power = MIN_LAUNCH_SPEED + state.charge * (MAX_LAUNCH_SPEED - MIN_LAUNCH_SPEED)
+        // 레인 위쪽 갈라진 틈(divider gap)을 지날 때 자연스럽게 필드 쪽(왼쪽)으로 흘러들어가도록
+        // 순수 수직 발사 대신 왼쪽으로 살짝 기울여서 쏩니다.
+        Body.setVelocity(ball, { x: -0.5 - Math.random() * 0.4, y: -power })
+      }
+      state.charge = 0
+    }
+
+    function addScore(base, x, y, color) {
+      var now = performance.now()
+      if (now - state.lastHitAt < COMBO_WINDOW_MS) {
+        state.combo += 1
+      } else {
+        state.combo = 1
+      }
+      state.lastHitAt = now
+      var comboMult = Math.min(state.combo, 5)
+      var bonusMult = now < state.bonusMultiplierUntil ? 2 : 1
+      var total = Math.round(base * comboMult * bonusMult)
+      state.score += total
+      scoreEl.textContent = String(state.score)
+      spawnPopup(x, y, '+' + total, color)
+      if (state.combo >= 2) {
+        spawnPopup(x, y - 22, 'COMBO x' + comboMult, '#ffd23d', 16)
+      }
+    }
+
+    function spawnPopup(x, y, text, color, size) {
+      popups.push({ x: x, y: y, text: text, color: color, size: size || 12, elapsed: 0, duration: 850 })
+    }
+
+    function spawnParticles(x, y, color, count) {
+      for (var i = 0; i < count; i++) {
+        var a = Math.random() * Math.PI * 2
+        var speed = 1.5 + Math.random() * 3.5
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          life: 0,
+          maxLife: 350 + Math.random() * 250,
+          color: color,
+        })
+      }
+    }
+
+    function shake(mag) {
+      state.shakeMag = Math.max(state.shakeMag, mag)
+    }
+
+    function checkAllTargetsHit() {
+      var allHit = targets.every(function (t) {
+        return t.hit
+      })
+      if (allHit && !state.targetsResetAt) {
+        state.score += ALL_TARGETS_BONUS
+        scoreEl.textContent = String(state.score)
+        state.bonusMultiplierUntil = performance.now() + BONUS_DURATION_MS
+        spawnPopup(TABLE_WIDTH / 2, 190, '보너스 +' + ALL_TARGETS_BONUS, '#ffd23d', 16)
+        spawnPopup(TABLE_WIDTH / 2, 214, '점수 2배 이벤트!', '#33e6ff', 13)
+        shake(14)
+        state.targetsResetAt = performance.now() + TARGET_RESET_DELAY_MS
+      }
+    }
+
+    Events.on(engine, 'collisionStart', function (event) {
+      event.pairs.forEach(function (pair) {
+        var a = pair.bodyA
+        var b = pair.bodyB
+        var ball = a.label === 'ball' ? a : b.label === 'ball' ? b : null
+        var other = ball ? (a === ball ? b : a) : null
+        if (!ball || !other) return
+
+        if (other.kind === 'bumper' || other.kind === 'slingshot') {
+          var dx = ball.position.x - other.position.x
+          var dy = ball.position.y - other.position.y
+          var dist = Math.hypot(dx, dy) || 1
+          var boost = other.kind === 'bumper' ? 7 : 5.5
+          Body.setVelocity(ball, {
+            x: ball.velocity.x + (dx / dist) * boost,
+            y: ball.velocity.y + (dy / dist) * boost,
+          })
+          other.flashUntil = performance.now() + 220
+          addScore(other.kind === 'bumper' ? BUMPER_SCORE : SLING_SCORE, other.position.x, other.position.y, other.color)
+          spawnParticles(ball.position.x, ball.position.y, other.color, 12)
+          shake(other.kind === 'bumper' ? 6 : 4)
+        } else if (other.kind === 'target') {
+          if (!other.hit) {
+            other.hit = true
+            addScore(TARGET_SCORE, other.position.x, other.position.y, COLORS.targetOn)
+            spawnParticles(other.position.x, other.position.y, COLORS.targetOn, 10)
+            checkAllTargetsHit()
+          }
+        }
+      })
+    })
+
+    function updateBalls() {
+      balls.forEach(function (ball) {
+        clampBallSpeed(ball)
+      })
+      // balls를 완전히 갱신하기 전에 onDrain()을 호출하면 그 안의 balls.length 체크가
+      // 아직 예전 배열(방금 빠진 공이 남아있는)을 보게 되어 목숨 차감이 누락됩니다.
+      // 그래서 필터링을 다 끝낸 뒤에 한 번만 onDrain()을 호출합니다.
+      var drainedCount = 0
+      var remaining = []
+      balls.forEach(function (ball) {
+        var drained =
+          (ball.position.y > DRAIN_Y && ball.position.x < LANE_DIVIDER_X) || ball.position.y > TABLE_HEIGHT + 60
+        if (drained) {
+          World.remove(world, ball)
+          drainedCount++
+        } else {
+          remaining.push(ball)
+        }
+      })
+      balls = remaining
+      if (drainedCount > 0) {
+        shake(8)
+        onDrain()
+      }
+    }
+
+    function onDrain() {
+      if (balls.length > 0) return
+      state.lives -= 1
+      state.combo = 0
+      updateLivesHUD()
+      if (state.lives <= 0) {
+        gameOver()
+      } else {
+        spawnBall()
+      }
+    }
+
+    function updateLivesHUD() {
+      livesEls.forEach(function (el, i) {
+        el.classList.toggle('lost', i >= state.lives)
+      })
+    }
+
+    function updateEffects(dt) {
+      particles = particles.filter(function (p) {
+        p.x += p.vx
+        p.y += p.vy
+        p.vy += 0.06
+        p.life += dt
+        return p.life < p.maxLife
+      })
+      popups = popups.filter(function (p) {
+        p.elapsed += dt
+        return p.elapsed < p.duration
+      })
+      if (state.shakeMag > 0.15) {
+        state.offsetX = (Math.random() - 0.5) * state.shakeMag
+        state.offsetY = (Math.random() - 0.5) * state.shakeMag
+        state.shakeMag *= 0.88
+      } else {
+        state.shakeMag = 0
+        state.offsetX = 0
+        state.offsetY = 0
+      }
+
+      if (state.charging) {
+        var ball = balls[0]
+        if (ball && ballInLaunchZone(ball)) {
+          state.charge = Math.min(1, state.charge + dt / CHARGE_TIME_MS)
+        }
+      }
+      launchGaugeEl.style.height = Math.round(state.charge * 100) + '%'
+
+      if (state.targetsResetAt && performance.now() >= state.targetsResetAt) {
+        targets.forEach(function (t) {
+          t.hit = false
+        })
+        state.targetsResetAt = 0
+      }
+    }
+
+    function drawGlowCircle(x, y, r, color, glow) {
+      ctx.save()
+      ctx.shadowColor = color
+      ctx.shadowBlur = glow
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+
+    function render() {
+      var w = TABLE_WIDTH
+      var h = TABLE_HEIGHT
+      ctx.save()
+      ctx.translate(state.offsetX, state.offsetY)
+
+      var grad = ctx.createLinearGradient(0, 0, 0, h)
+      grad.addColorStop(0, '#0d0620')
+      grad.addColorStop(1, '#1a0a33')
+      ctx.fillStyle = grad
+      ctx.fillRect(-20, -20, w + 40, h + 40)
+
+      Composite.allBodies(world).forEach(function (body) {
+        if (body.label === 'ball' || body.label === 'flipper') return
+        drawStaticBody(body)
+      })
+
+      targets.forEach(function (t) {
+        drawGlowCircle(t.position.x, t.position.y, t.circleRadius, t.hit ? COLORS.targetOn : COLORS.targetOff, t.hit ? 14 : 4)
+      })
+
+      bumpers.forEach(function (b) {
+        var flashing = performance.now() < b.flashUntil
+        drawGlowCircle(b.position.x, b.position.y, b.circleRadius, b.color, flashing ? 26 : 10)
+        ctx.save()
+        ctx.strokeStyle = flashing ? '#ffffff' : 'rgba(255,255,255,0.4)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(b.position.x, b.position.y, b.circleRadius * 0.55, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.restore()
+      })
+
+      slingshots.forEach(function (s) {
+        var flashing = performance.now() < s.flashUntil
+        ctx.save()
+        ctx.shadowColor = s.color
+        ctx.shadowBlur = flashing ? 22 : 8
+        ctx.fillStyle = s.color
+        drawPolygonPath(s)
+        ctx.fill()
+        ctx.restore()
+      })
+
+      particles.forEach(function (p) {
+        var alpha = Math.max(0, 1 - p.life / p.maxLife)
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      })
+
+      balls.forEach(function (ball) {
+        drawGlowCircle(ball.position.x, ball.position.y, ball.circleRadius, COLORS.ball, 12)
+      })
+
+      flippers.forEach(function (f) {
+        drawFlipper(f)
+      })
+
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255, 47, 146, 0.6)'
+      ctx.setLineDash([5, 6])
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(LANE_DIVIDER_X + 5, LANE_TOP_GAP_Y)
+      ctx.lineTo(w - WALL, LANE_TOP_GAP_Y)
+      ctx.stroke()
+      ctx.restore()
+
+      popups.forEach(function (p) {
+        var t = p.elapsed / p.duration
+        ctx.save()
+        ctx.globalAlpha = Math.max(0, 1 - t)
+        ctx.fillStyle = p.color
+        ctx.font = 'bold ' + p.size + 'px "Courier New", monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText(p.text, p.x, p.y - t * 26)
+        ctx.restore()
+      })
+
+      if (state.bonusMultiplierUntil > performance.now()) {
+        ctx.save()
+        ctx.fillStyle = '#ffd23d'
+        ctx.font = 'bold 12px "Courier New", monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText('BONUS x2', w / 2, 32)
+        ctx.restore()
+      }
+
+      ctx.restore()
+    }
+
+    function drawPolygonPath(body) {
+      var verts = body.vertices
+      ctx.beginPath()
+      ctx.moveTo(verts[0].x, verts[0].y)
+      for (var i = 1; i < verts.length; i++) {
+        ctx.lineTo(verts[i].x, verts[i].y)
+      }
+      ctx.closePath()
+    }
+
+    function drawStaticBody(body) {
+      if (body.kind === 'bumper' || body.kind === 'slingshot' || body.kind === 'target') return
+      ctx.save()
+      ctx.fillStyle = 'rgba(75, 58, 120, 0.9)'
+      ctx.strokeStyle = COLORS.wall
+      ctx.lineWidth = 1.5
+      drawPolygonPath(body)
+      ctx.fill()
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    function drawFlipper(f) {
+      ctx.save()
+      ctx.fillStyle = f.pressed ? '#ffffff' : '#ff2f92'
+      ctx.shadowColor = '#ff2f92'
+      ctx.shadowBlur = f.pressed ? 18 : 10
+      drawPolygonPath(f.body)
+      ctx.fill()
+      ctx.restore()
+    }
+
+    function resizeCanvas() {
+      var rect = stageWrap.getBoundingClientRect()
+      var dpr = window.devicePixelRatio || 1
+      canvas.width = Math.round(rect.width * dpr)
+      canvas.height = Math.round(rect.height * dpr)
+      var scale = (rect.width / TABLE_WIDTH) * dpr
+      ctx.setTransform(scale, 0, 0, scale, 0, 0)
+    }
+
+    var lastTime = 0
+    var accumulator = 0
+
+    function frame(ts) {
+      if (!lastTime) lastTime = ts
+      var delta = ts - lastTime
+      lastTime = ts
+      if (delta > 100) delta = 100
+      accumulator += delta
+
+      var steps = 0
+      while (accumulator >= FIXED_DT && steps < 5) {
+        if (state.phase === 'playing') {
+          updateFlippers()
+          Engine.update(engine, FIXED_DT)
+          updateBalls()
+        }
+        accumulator -= FIXED_DT
+        steps++
+      }
+
+      updateEffects(delta)
+      render()
+      requestAnimationFrame(frame)
+    }
+
+    function resetGame() {
+      state.score = 0
+      state.lives = 3
+      state.combo = 0
+      state.lastHitAt = 0
+      state.bonusMultiplierUntil = 0
+      state.targetsResetAt = 0
+      state.charging = false
+      state.charge = 0
+      state.shakeMag = 0
+      balls.forEach(function (b) {
+        World.remove(world, b)
+      })
+      balls = []
+      particles = []
+      popups = []
+      targets.forEach(function (t) {
+        t.hit = false
+      })
+      scoreEl.textContent = '0'
+      updateLivesHUD()
+      spawnBall()
+    }
+
+    function startGame() {
+      resetGame()
+      state.phase = 'playing'
+      startScreenEl.classList.add('hidden')
+      gameOverScreenEl.classList.add('hidden')
+    }
+
+    function gameOver() {
+      state.phase = 'over'
+      if (state.score > state.best) {
+        state.best = state.score
+        localStorage.setItem(BEST_KEY, String(state.best))
+      }
+      finalScoreEl.textContent = String(state.score)
+      finalBestEl.textContent = String(state.best)
+      bestEl.textContent = String(state.best)
+      gameOverScreenEl.classList.remove('hidden')
+    }
+
+    window.addEventListener('keydown', function (e) {
+      if (['ArrowLeft', 'ArrowRight', 'KeyZ', 'Slash', 'Space'].indexOf(e.code) !== -1) {
+        e.preventDefault()
+      }
+      keys.add(e.code)
+      if (e.code === 'Space' && state.phase === 'playing' && !state.charging) {
+        state.charging = true
+      }
+    })
+    window.addEventListener('keyup', function (e) {
+      keys.delete(e.code)
+      if (e.code === 'Space') tryLaunch()
+    })
+
+    function bindHoldZone(el, onDown, onUp) {
+      el.addEventListener('pointerdown', function (e) {
+        e.preventDefault()
+        el.setPointerCapture && el.setPointerCapture(e.pointerId)
+        el.classList.add('active')
+        onDown()
+      })
+      el.addEventListener('pointerup', function (e) {
+        el.classList.remove('active')
+        onUp()
+      })
+      el.addEventListener('pointercancel', function () {
+        el.classList.remove('active')
+        onUp()
+      })
+    }
+
+    bindHoldZone(
+      touchLeftEl,
+      function () {
+        touchLeftDown = true
+      },
+      function () {
+        touchLeftDown = false
+      },
+    )
+    bindHoldZone(
+      touchRightEl,
+      function () {
+        touchRightDown = true
+      },
+      function () {
+        touchRightDown = false
+      },
+    )
+    bindHoldZone(
+      touchLaunchEl,
+      function () {
+        if (state.phase === 'playing') state.charging = true
+      },
+      function () {
+        tryLaunch()
+      },
+    )
+
+    startBtn.addEventListener('click', startGame)
+    retryBtn.addEventListener('click', startGame)
+
+    window.addEventListener('resize', resizeCanvas)
+    window.addEventListener('orientationchange', resizeCanvas)
+
+    buildTable()
+    resizeCanvas()
+    bestEl.textContent = String(state.best)
+    startBestEl.textContent = String(state.best)
+    requestAnimationFrame(frame)
+  })()
+  </script>
+</body>
+</html>

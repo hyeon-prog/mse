@@ -8,6 +8,7 @@ import AngryBirds from './AngryBirds/AngryBirds.jsx'
 import Domino from './Domino/Domino.jsx'
 import InfiniteStairs from './InfiniteStairs/InfiniteStairs.jsx'
 import WatermelonGame from './WatermelonGame/WatermelonGame.jsx'
+import Pinball from './Pinball/Pinball.jsx'
 
 export const games = [
   {
@@ -79,6 +80,13 @@ export const games = [
     description: '같은 과일끼리 부딫혀 합치고, 최종 진화체인 수박까지 만들어보세요.',
     icon: '🍉',
     component: WatermelonGame,
+  },
+  {
+    id: 'pinball',
+    name: '네온 핀볼',
+    description: '플리퍼로 공을 튕겨내며 범퍼·슬링샷·타겟을 맞춰 최대한 오래 살리고 점수를 쌓아보세요.',
+    icon: '🕹️',
+    component: Pinball,
   },
 ]
 

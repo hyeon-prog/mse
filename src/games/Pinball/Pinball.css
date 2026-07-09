@@ -1,0 +1,29 @@
+.pinball-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.pinball-frame-wrap {
+  position: relative;
+  width: min(94vw, 440px);
+  aspect-ratio: 400 / 820;
+  border: 4px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  overflow: hidden;
+}
+
+.pinball-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.pinball-help {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 440px;
+  text-align: center;
+}
