@@ -1,7 +1,7 @@
 // 표준 블록 도미노(더블식스, 28피스) 순수 로직
 // 규칙: 인원수와 무관하게 각자 7피스씩 분배, 낼 수 없으면 낼 수 있을 때까지
 // 보유고에서 뽑기, 보유고가 비면 패스. 손패를 다 내거나 블록(전원 못 냄)이면
-// 라운드 종료 — 승자가 나머지 전원의 남은 핀 합을 점수로 획득.
+// 라운드 종료 — 승자가 나머지 전원의 남은 핀 합 + 보유고에 남은 타일의 핀 합을 점수로 획득.
 
 export const HAND_SIZE = 7
 
@@ -174,9 +174,10 @@ function pipTotal(state, player) {
 }
 
 function finishRound(state, winnerId, reason) {
-  const pointsAwarded = state.playerOrder
+  const opponentPips = state.playerOrder
     .filter((id) => id !== winnerId)
     .reduce((sum, id) => sum + pipTotal(state, id), 0)
+  const pointsAwarded = opponentPips + pipSum(state.boneyard)
   const scores = { ...state.scores, [winnerId]: state.scores[winnerId] + pointsAwarded }
   const matchOver = state.mode === 'single-round' || scores[winnerId] >= state.targetScore
   return {
