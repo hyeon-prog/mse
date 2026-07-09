@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import DominoOnline from './DominoOnline.jsx'
 import DominoTile from './DominoTile.jsx'
+import DominoTutorial from './DominoTutorial.jsx'
 import {
   canPlay,
   chooseAiMove,
@@ -46,6 +47,7 @@ export default function Domino() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [isDrawing, setIsDrawing] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   const startMatch = () => {
     const playerOrder = [HUMAN_ID, ...Array.from({ length: playerCount - 1 }, (_, i) => `ai-${i + 1}`)]
@@ -145,6 +147,12 @@ export default function Domino() {
     return (
       <div className="domino domino-select">
         <p>이집트 카페 스타일 블록 도미노(더블식스). AI와 대결하거나 친구와 온라인으로 겨루세요.</p>
+
+        <button className="btn btn-secondary" onClick={() => setShowTutorial(true)}>
+          📖 튜토리얼 보기
+        </button>
+
+        {showTutorial && <DominoTutorial onClose={() => setShowTutorial(false)} />}
 
         <div className="domino-option-group">
           <span className="domino-option-label">인원수</span>
