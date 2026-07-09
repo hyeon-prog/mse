@@ -323,13 +323,6 @@ export default function Domino() {
           {isDrawing && <span className="domino-drawing-indicator"> · 카드 가져가는 중...</span>}
         </span>
         <span>보유고 {match.boneyard.length}장</span>
-        <span className="domino-hud-scores">
-          {match.playerOrder.map((id) => (
-            <span key={id}>
-              {playerLabel(id)} {match.scores[id]}
-            </span>
-          ))}
-        </span>
         <button className="btn btn-secondary" onClick={backToSelect}>
           새 게임
         </button>
