@@ -8,6 +8,7 @@ import Domino from './Domino/Domino.jsx'
 import InfiniteStairs from './InfiniteStairs/InfiniteStairs.jsx'
 import WatermelonGame from './WatermelonGame/WatermelonGame.jsx'
 import Pinball from './Pinball/Pinball.jsx'
+import HeadSoccer from './HeadSoccer/HeadSoccer.jsx'
 
 export const games = [
   {
@@ -87,6 +88,13 @@ export const games = [
     description: '플리퍼로 공을 튕겨내며 범퍼·슬링샷·타겟을 맞춰 최대한 오래 살리고 점수를 쌓아보세요.',
     icon: '🕹️',
     component: Pinball,
+  },
+  {
+    id: 'headsoccer',
+    name: '헤드사커',
+    description: '큰 머리로 헤딩하고 킥으로 공을 차서 상대 골대에 넣으세요. 1인(VS CPU) 또는 2인 동시 플레이.',
+    icon: '⚽',
+    component: HeadSoccer,
   },
 ]
 

@@ -1,0 +1,152 @@
+.headsoccer-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.headsoccer-hud {
+  width: min(94vw, 480px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-retro);
+}
+
+.headsoccer-score {
+  font-size: 1.6rem;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+}
+
+.headsoccer-score.left {
+  color: #33e6ff;
+  text-shadow: 0 0 8px #33e6ff;
+}
+
+.headsoccer-score.right {
+  color: #ff2f92;
+  text-shadow: 0 0 8px #ff2f92;
+}
+
+.headsoccer-time {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.headsoccer-canvas-wrap {
+  position: relative;
+  width: min(94vw, 480px);
+  aspect-ratio: 480 / 280;
+  border: 4px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  overflow: hidden;
+}
+
+.headsoccer-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.headsoccer-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.headsoccer-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px 22px;
+  border: 3px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  max-width: 88%;
+}
+
+.headsoccer-result p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.headsoccer-controls-hint {
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.headsoccer-best {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.headsoccer-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.headsoccer-touch-controls {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+  padding: 8px;
+  gap: 6px;
+}
+
+.headsoccer-touch-cluster {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.headsoccer-touch-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(20, 12, 40, 0.55);
+  color: var(--text);
+  font-size: 0.85rem;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.headsoccer-touch-btn.kick {
+  border-color: #ff2f92;
+  color: #ff2f92;
+}
+
+.headsoccer-touch-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .headsoccer-touch-controls {
+    display: none;
+  }
+}
+
+.headsoccer-help {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 480px;
+  text-align: center;
+}
