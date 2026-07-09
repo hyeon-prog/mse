@@ -6,15 +6,16 @@ import {
   canPlay,
   chooseAiMove,
   createMatch,
+  drawSingleTile,
   getValidMoves,
   passTurn,
   playMove,
-  resolveDrawPhase,
   startNextRound,
 } from './dominoLogic.js'
 import './Domino.css'
 
 const AI_MOVE_DELAY_MS = 500
+const DRAW_DELAY_MS = 450
 const HUMAN_ID = 'human'
 const DEFAULT_TARGET_SCORE = 100
 
@@ -44,6 +45,7 @@ export default function Domino() {
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [isDrawing, setIsDrawing] = useState(false)
 
   const startMatch = () => {
     const playerOrder = [HUMAN_ID, ...Array.from({ length: playerCount - 1 }, (_, i) => `ai-${i + 1}`)]
@@ -51,27 +53,33 @@ export default function Domino() {
     setPendingTile(null)
     setPlayerName('')
     setSaveError('')
+    setIsDrawing(false)
   }
 
   const backToSelect = () => {
     setMatch(null)
     setPendingTile(null)
+    setIsDrawing(false)
   }
 
-  // 턴 진행: 낼 수 없으면 자동 뽑기/패스, AI 턴이면 잠시 후 자동 착수
+  // 턴 진행: 낼 수 없으면 한 장씩 천천히 뽑고(리액션), 그래도 없으면 패스,
+  // AI 턴이면 잠시 후 자동 착수
   useEffect(() => {
     if (!match || match.status !== 'playing') return undefined
 
-    const drawn = resolveDrawPhase(match)
-    if (drawn !== match) {
-      setMatch(drawn)
-      return undefined
-    }
-
     if (!canPlay(match.hands[match.currentTurn], match.board)) {
+      if (match.boneyard.length > 0) {
+        setIsDrawing(true)
+        const timer = setTimeout(() => {
+          setMatch((current) => (current && current.status === 'playing' ? drawSingleTile(current) : current))
+        }, DRAW_DELAY_MS)
+        return () => clearTimeout(timer)
+      }
+      setIsDrawing(false)
       setMatch(passTurn(match))
       return undefined
     }
+    setIsDrawing(false)
 
     if (match.currentTurn !== HUMAN_ID) {
       const timer = setTimeout(() => {
@@ -221,7 +229,10 @@ export default function Domino() {
   return (
     <div className="domino">
       <div className="domino-hud">
-        <span>턴: {playerLabel(match.currentTurn)}</span>
+        <span>
+          턴: {playerLabel(match.currentTurn)}
+          {isDrawing && <span className="domino-drawing-indicator"> · 카드 가져가는 중...</span>}
+        </span>
         <span>보유고 {match.boneyard.length}장</span>
         <span className="domino-hud-scores">
           {match.playerOrder.map((id) => (

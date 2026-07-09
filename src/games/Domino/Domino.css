@@ -1,8 +1,33 @@
+@keyframes dominoDrawIn {
+  0% {
+    transform: translateY(-14px) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(2px) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .domino {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
+}
+
+.domino-drawing-indicator {
+  color: var(--accent-2);
+  animation: dominoPulse 1s ease-in-out infinite;
+}
+
+@keyframes dominoPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 .domino-select {
@@ -125,6 +150,13 @@
   background: #fdfdf6;
   border: 2px solid #17130f;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* 손패에 새 타일이 생길 때(뽑기/최초 분배)만 재생 — 체인에 붙는 타일은 대상 아님
+   (왼쪽에 이어붙일 때 기존 체인 타일들의 index가 밀리는 것과 겹치지 않도록 범위를 좁힘) */
+.domino-hand-slot .domino-tile,
+.domino-opponent-hand .domino-tile {
+  animation: dominoDrawIn 0.35s ease-out;
 }
 
 .domino-tile.horizontal {

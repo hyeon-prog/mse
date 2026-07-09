@@ -2,7 +2,7 @@
 // PeerJS 연결/전송은 dominoSession.js가 담당하고, 여기는 상태 계산만 한다.
 // 참가자에게는 자기 손패와 공개 정보(다른 사람 손패/보유고는 개수만)만 전달된다.
 
-import { canPlay, createMatch, getValidMoves, passTurn, playMove, resolveDrawPhase, startNextRound } from './dominoLogic.js'
+import { canPlay, createMatch, drawSingleTile, getValidMoves, passTurn, playMove, startNextRound } from './dominoLogic.js'
 
 export const MAX_PLAYERS = 4
 
@@ -34,34 +34,29 @@ export function setSeatConnected(room, playerId, connected) {
   return { ...room, seats }
 }
 
-// 현재 턴 플레이어가 낼 수 있을 때까지 자동으로 뽑기/패스를 진행 (싱글플레이 effect와 동일 규칙)
-export function advanceMatch(match) {
-  let current = match
-  for (let guard = 0; guard < 200; guard++) {
-    if (current.status !== 'playing') return current
-    const drawn = resolveDrawPhase(current)
-    if (drawn !== current) {
-      current = drawn
-      continue
-    }
-    if (!canPlay(current.hands[current.currentTurn], current.board)) {
-      current = passTurn(current)
-      continue
-    }
-    return current
-  }
-  return current
+/**
+ * 현재 턴 플레이어 기준으로 딱 한 단계만 진행한다: 낼 수 없고 보유고가
+ * 있으면 한 장 뽑고, 보유고도 없으면 패스한다. 이미 낼 수 있거나 라운드/
+ * 매치가 끝났으면 같은 참조를 그대로 반환한다(더 진행할 게 없다는 신호).
+ * dominoSession.js가 이 함수를 delay를 두고 반복 호출해서 "한 장씩 천천히
+ * 가져가는" 리액션을 온라인에서도 보여준다.
+ */
+export function stepMatch(match) {
+  if (match.status !== 'playing') return match
+  if (canPlay(match.hands[match.currentTurn], match.board)) return match
+  if (match.boneyard.length > 0) return drawSingleTile(match)
+  return passTurn(match)
 }
 
 export function startHostMatch(room) {
   if (room.match || room.seats.length < 2) return room
   const playerOrder = room.seats.map((s) => s.playerId)
-  return { ...room, match: advanceMatch(createMatch(room.mode, room.targetScore, playerOrder)) }
+  return { ...room, match: createMatch(room.mode, room.targetScore, playerOrder) }
 }
 
 export function startHostNextRound(room) {
   if (!room.match || room.match.status !== 'round-over') return room
-  return { ...room, match: advanceMatch(startNextRound(room.match)) }
+  return { ...room, match: startNextRound(room.match) }
 }
 
 // 유효하지 않은 착수(내 턴 아님, 규칙 위반, 늦게 도착한 중복)는
@@ -73,7 +68,7 @@ export function applyPlayerMove(room, playerId, move) {
     (m) => m.tile.a === move.tile.a && m.tile.b === move.tile.b && m.end === move.end,
   )
   if (!valid) return room
-  return { ...room, match: advanceMatch(playMove(match, move)) }
+  return { ...room, match: playMove(match, move) }
 }
 
 export function deriveLobby(room) {
@@ -104,6 +99,9 @@ export function deriveView(room, playerId) {
     handCounts,
     scores: match.scores,
     currentTurn: match.currentTurn,
+    // 상대 손패는 몰라도 "이 상태에서 한 단계 더 진행할 게 남았는지"는
+    // 호스트만 판단할 수 있으므로 여기서 계산해서 내려준다.
+    isDrawing: match.status === 'playing' && stepMatch(match) !== match,
     status: match.status,
     lastRoundResult: match.lastRoundResult,
     matchWinnerId: match.matchWinnerId,
