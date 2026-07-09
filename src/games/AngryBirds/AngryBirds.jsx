@@ -147,7 +147,13 @@ export default function AngryBirds() {
           <div
             key={i}
             className="ab-block"
-            style={{ left: b.x, top: b.y, width: b.w, height: b.h }}
+            style={{
+              left: b.x,
+              top: b.y,
+              width: b.w,
+              height: b.h,
+              transform: `translate(-50%, -50%) rotate(${b.angle}deg)`,
+            }}
           />
         ))}
 
