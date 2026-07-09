@@ -511,6 +511,18 @@
   animation-delay: 1.5s;
 }
 
+/* 타일 구성 단계 - 28장 전체를 작게 그려서 한눈에 보여줌 */
+.domino-tutorial-full-set {
+  --tile-w: 30px;
+  --tile-h: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 3px;
+  max-width: 300px;
+}
+
 /* 2단계 */
 .domino-tutorial-step2 {
   display: flex;
