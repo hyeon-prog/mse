@@ -47,6 +47,36 @@ function clampAimX(x, radius) {
   return Math.max(BOTTLE_LEFT + radius, Math.min(BOTTLE_RIGHT - radius, x))
 }
 
+const LEGEND_ICON_SIZE = 34
+
+function FruitIcon({ stage }) {
+  const canvasRef = useRef(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, LEGEND_ICON_SIZE, LEGEND_ICON_SIZE)
+    drawFruit(ctx, LEGEND_ICON_SIZE / 2, LEGEND_ICON_SIZE / 2, LEGEND_ICON_SIZE * 0.38, stage)
+  }, [stage])
+  return <canvas ref={canvasRef} width={LEGEND_ICON_SIZE} height={LEGEND_ICON_SIZE} />
+}
+
+function FruitLegend({ activeStage }) {
+  return (
+    <div className="watermelon-legend">
+      <h4>과일 단계</h4>
+      <ol>
+        {FRUITS.map((fruit, stage) => (
+          <li key={fruit.name} className={stage === activeStage ? 'active' : ''}>
+            <FruitIcon stage={stage} />
+            <span>{fruit.name}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 export default function WatermelonGame() {
   const canvasRef = useRef(null)
   const matterRef = useRef(null)
@@ -343,48 +373,52 @@ export default function WatermelonGame() {
         </span>
       </div>
 
-      <div className="watermelon-canvas-wrap">
-        <canvas
-          ref={canvasRef}
-          className="watermelon-canvas"
-          onPointerMove={handlePointerMove}
-          onPointerDown={handleDrop}
-        />
+      <div className="watermelon-layout">
+        <div className="watermelon-canvas-wrap">
+          <canvas
+            ref={canvasRef}
+            className="watermelon-canvas"
+            onPointerMove={handlePointerMove}
+            onPointerDown={handleDrop}
+          />
 
-        {loading && (
-          <div className="watermelon-overlay">
-            <div className="watermelon-result">
-              <h3>불러오는 중...</h3>
-              {loadError && <p className="watermelon-error">{loadError}</p>}
+          {loading && (
+            <div className="watermelon-overlay">
+              <div className="watermelon-result">
+                <h3>불러오는 중...</h3>
+                {loadError && <p className="watermelon-error">{loadError}</p>}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {!loading && phase === 'idle' && (
-          <div className="watermelon-overlay">
-            <div className="watermelon-result">
-              <h3>수박게임</h3>
-              <p>같은 과일 두 개를 부딫혀 합치고, 수박까지 진화시켜 보세요.</p>
-              <p>최고 점수: {bestScore}</p>
-              <button className="btn btn-primary" onClick={startGame}>
-                시작하기
-              </button>
+          {!loading && phase === 'idle' && (
+            <div className="watermelon-overlay">
+              <div className="watermelon-result">
+                <h3>수박게임</h3>
+                <p>같은 과일 두 개를 부딫혀 합치고, 수박까지 진화시켜 보세요.</p>
+                <p>최고 점수: {bestScore}</p>
+                <button className="btn btn-primary" onClick={startGame}>
+                  시작하기
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {phase === 'over' && (
-          <div className="watermelon-overlay">
-            <div className="watermelon-result">
-              <h3>게임 오버</h3>
-              <p>최종 점수: {score}</p>
-              <p>최고 점수: {bestScore}</p>
-              <button className="btn btn-primary" onClick={startGame}>
-                다시하기
-              </button>
+          {phase === 'over' && (
+            <div className="watermelon-overlay">
+              <div className="watermelon-result">
+                <h3>게임 오버</h3>
+                <p>최종 점수: {score}</p>
+                <p>최고 점수: {bestScore}</p>
+                <button className="btn btn-primary" onClick={startGame}>
+                  다시하기
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        <FruitLegend activeStage={phase === 'playing' ? nextStage : -1} />
       </div>
 
       <p className="watermelon-help">마우스/터치로 좌우 이동, 클릭/탭으로 떨어뜨리세요. 병 위 경고선을 넘어 2초 이상 쌓이면 게임 오버.</p>
