@@ -406,6 +406,18 @@ h3 { font-size: 0.9rem; }
   padding: 8px 12px;
 }
 
+.university-logo {
+  border-radius: 3px;
+  background: #fff;
+  object-fit: contain;
+  padding: 2px;
+  vertical-align: middle;
+}
+
+.university-logo-fallback {
+  vertical-align: middle;
+}
+
 .leaderboard-room-leave {
   background: none;
   border: none;
@@ -461,6 +473,9 @@ h3 { font-size: 0.9rem; }
 .room-selector-item {
   width: 100%;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .room-selector-create {

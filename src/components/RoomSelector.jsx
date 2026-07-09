@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import UniversityLogo from './UniversityLogo.jsx'
 import { createRoom, normalize, searchRooms } from '../utils/university.js'
 
 export default function RoomSelector({ onJoin }) {
@@ -72,7 +73,7 @@ export default function RoomSelector({ onJoin }) {
           {results.map((name) => (
             <li key={name}>
               <button className="btn btn-secondary room-selector-item" onClick={() => handleJoin(name)} disabled={joining}>
-                🏫 {name}
+                <UniversityLogo name={name} size={18} /> {name}
               </button>
             </li>
           ))}

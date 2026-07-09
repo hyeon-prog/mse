@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { games } from '../games/gameConfig.js'
 import RoomSelector from '../components/RoomSelector.jsx'
+import UniversityLogo from '../components/UniversityLogo.jsx'
 import { subscribeScores } from '../utils/leaderboard.js'
 import { getSelectedUniversity, leaveUniversity, setSelectedUniversity } from '../utils/university.js'
 
@@ -63,7 +64,7 @@ export default function Leaderboard() {
       <div className="leaderboard-room-header">
         <h1>랭킹</h1>
         <div className="leaderboard-room-badge">
-          🏫 {university}
+          <UniversityLogo name={university} size={22} /> {university}
           <button className="leaderboard-room-leave" onClick={handleLeave}>
             방 변경
           </button>
