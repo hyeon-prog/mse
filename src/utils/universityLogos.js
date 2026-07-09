@@ -74,6 +74,16 @@ const SEOUL_UNIVERSITY_DOMAINS = {
   한예종: 'karts.ac.kr',
   한국체육대학교: 'knsu.ac.kr',
   한체대: 'knsu.ac.kr',
+  육군사관학교: 'kma.ac.kr',
+  육사: 'kma.ac.kr',
+  총신대학교: 'chongshin.ac.kr',
+  총신대: 'chongshin.ac.kr',
+  성공회대학교: 'skhu.ac.kr',
+  성공회대: 'skhu.ac.kr',
+  감리교신학대학교: 'mtu.ac.kr',
+  감신대: 'mtu.ac.kr',
+  장로회신학대학교: 'puts.ac.kr',
+  장신대: 'puts.ac.kr',
 }
 
 export function getUniversityDomain(name) {
