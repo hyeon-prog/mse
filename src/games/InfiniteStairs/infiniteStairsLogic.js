@@ -11,7 +11,7 @@ const VANISH_FADE_MS = 350
 const INVINCIBLE_ROWS = 1
 const INITIAL_BUFFER_ROWS = 2
 const BASE_RISE_SPEED = 130
-const RISE_GROWTH_PER_SCORE = 0.04
+const RISE_GROWTH_PER_SCORE = 0.02
 
 // 계단 블록(발판) 입체 표현
 const STEP_DEPTH = 40
