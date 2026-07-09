@@ -27,21 +27,58 @@ const PROC_PIG_R = 14
 const PROC_ZONE_START = 360
 const PROC_ZONE_END = 620
 
+// 구조물 재질별 튜닝값 - hp(버틸 수 있는 타격 수), massScale(부딪혔을 때 얼마나 세게 튕겨나가는지).
+// 유리는 가볍고 약해서 한 번에 깨지며 크게 날아가고, 돌은 무겁고 단단해서 여러 번 맞아야 부서지고 거의 안 밀려난다.
+export const MATERIALS = {
+  wood: { hp: 2, massScale: 1, label: '나무' },
+  stone: { hp: 4, massScale: 0.5, label: '돌' },
+  glass: { hp: 1, massScale: 1.8, label: '유리' },
+}
+const SHATTER_TICKS = 14
+const SHARD_COUNT = 5
+
+// 새 종류별 특수 능력 튜닝값. 빨강은 기본형(능력 없음).
+export const YELLOW_BOOST = 1.55
+export const BLUE_SPLIT_ANGLE = 0.35 // 라디안 단위로 갈라지는 각도
+export const BLUE_SPLIT_RADIUS_SCALE = 0.72
+export const BLACK_EXPLOSION_RADIUS = 70
+export const BLACK_EXPLOSION_IMPULSE = 10
+
+const SPECIAL_BIRD_CYCLE = ['yellow', 'blue', 'black']
+
+/**
+ * 스테이지의 새 대기열을 만듭니다. 첫 새는 항상 빨강(기본형)이고,
+ * 이후 3마리마다 한 번씩 특수 능력 새(노랑→파랑→검은색 순환)를 섞습니다.
+ */
+function buildBirdQueue(count) {
+  const queue = []
+  let specialCursor = 0
+  for (let i = 0; i < count; i++) {
+    if (i > 0 && i % 3 === 0) {
+      queue.push(SPECIAL_BIRD_CYCLE[specialCursor % SPECIAL_BIRD_CYCLE.length])
+      specialCursor++
+    } else {
+      queue.push('red')
+    }
+  }
+  return queue
+}
+
 export const HANDCRAFTED_LEVELS = [
   {
-    birdCount: 4,
+    birdCount: 2,
     blocks: [
-      { x: 480, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 560, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 480, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
+      { x: 560, y: GROUND_Y - 20, w: 20, h: 40, material: 'glass' },
     ],
     pigs: [{ x: 520, y: GROUND_Y - 50, r: 14 }],
   },
   {
-    birdCount: 4,
+    birdCount: 3,
     blocks: [
-      { x: 460, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 460, y: GROUND_Y - 60, w: 20, h: 40 },
-      { x: 580, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 460, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 460, y: GROUND_Y - 60, w: 20, h: 40, material: 'wood' },
+      { x: 580, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
     ],
     pigs: [
       { x: 460, y: GROUND_Y - 90, r: 14 },
@@ -49,12 +86,12 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 5,
+    birdCount: 4,
     blocks: [
-      { x: 420, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 500, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 500, y: GROUND_Y - 60, w: 20, h: 40 },
-      { x: 580, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 420, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
+      { x: 500, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 500, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
+      { x: 580, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
     ],
     pigs: [
       { x: 420, y: GROUND_Y - 50, r: 14 },
@@ -63,12 +100,12 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 5,
+    birdCount: 4,
     blocks: [
-      { x: 400, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 400, y: GROUND_Y - 60, w: 20, h: 40 },
-      { x: 560, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 560, y: GROUND_Y - 60, w: 20, h: 40 },
+      { x: 400, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 400, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
+      { x: 560, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 560, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
     ],
     pigs: [
       { x: 400, y: GROUND_Y - 90, r: 14 },
@@ -77,14 +114,14 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 6,
+    birdCount: 5,
     blocks: [
-      { x: 380, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 380, y: GROUND_Y - 60, w: 20, h: 40 },
-      { x: 380, y: GROUND_Y - 100, w: 20, h: 40 },
-      { x: 480, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 560, y: GROUND_Y - 20, w: 20, h: 40 },
-      { x: 560, y: GROUND_Y - 60, w: 20, h: 40 },
+      { x: 380, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 380, y: GROUND_Y - 60, w: 20, h: 40, material: 'wood' },
+      { x: 380, y: GROUND_Y - 100, w: 20, h: 40, material: 'glass' },
+      { x: 480, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
+      { x: 560, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
+      { x: 560, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
     ],
     pigs: [
       { x: 380, y: GROUND_Y - 130, r: 14 },
@@ -100,12 +137,22 @@ export const HANDCRAFTED_LEVELS = [
  * 절차적으로 스테이지를 생성합니다. 끝없이 이어지는 모드라 최종 승리 상태는 없고,
  * 새가 다 떨어지면 그 회차가 끝납니다.
  */
+/** 티어가 올라갈수록 돌(단단함) 비중을 늘려 구조물을 허무는 데 더 신중한 조준이 필요하게 합니다. */
+function pickMaterial(tier) {
+  const roll = Math.random()
+  const stoneChance = Math.min(0.15 + tier * 0.04, 0.45)
+  const glassChance = 0.2
+  if (roll < stoneChance) return 'stone'
+  if (roll < stoneChance + glassChance) return 'glass'
+  return 'wood'
+}
+
 function generateLevel(levelIndex) {
   const tier = levelIndex - HANDCRAFTED_LEVELS.length + 1
   const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
   const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
   const pigCount = Math.min(4 + tier, 10)
-  const birdCount = Math.min(pigCount + 2, 12)
+  const birdCount = Math.min(pigCount + 1, 10)
 
   const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
   const towerXs = Array.from({ length: towerCount }, (_, t) =>
@@ -117,7 +164,13 @@ function generateLevel(levelIndex) {
   towerXs.forEach((x) => {
     const height = 1 + Math.floor(Math.random() * maxHeight)
     for (let h = 0; h < height; h++) {
-      blocks.push({ x, y: GROUND_Y - PROC_BLOCK_H / 2 - h * PROC_BLOCK_H, w: PROC_BLOCK_W, h: PROC_BLOCK_H })
+      blocks.push({
+        x,
+        y: GROUND_Y - PROC_BLOCK_H / 2 - h * PROC_BLOCK_H,
+        w: PROC_BLOCK_W,
+        h: PROC_BLOCK_H,
+        material: pickMaterial(tier),
+      })
     }
     towerTops.push(GROUND_Y - height * PROC_BLOCK_H)
   })
@@ -151,7 +204,38 @@ function getLevel(levelIndex) {
 // 좌표가 어긋나 있으면(예: 어떤 블록과도 안 겹치는 곳에 놓인 돼지) 레벨 시작과
 // 동시에 중력을 받아 제자리로 떨어지고, 이미 맞는 좌표라면 변화 없이 그대로 멈춥니다.
 function createBlockState(block) {
-  return { ...block, vx: 0, vy: 0, angle: 0, angularVelocity: 0, resting: false, hit: false, hitCooldown: 0 }
+  const material = block.material || 'wood'
+  const hpMax = MATERIALS[material].hp
+  return {
+    ...block,
+    material,
+    hp: hpMax,
+    hpMax,
+    vx: 0,
+    vy: 0,
+    angle: 0,
+    angularVelocity: 0,
+    resting: false,
+    hit: false,
+    hitCooldown: 0,
+  }
+}
+
+/**
+ * 부서진 블록 자리에 흩날리는 파편 이펙트를 만듭니다. 각도/거리는 생성 시 한 번만
+ * 무작위로 정해서 저장해두고 그대로 재사용합니다 - 매 렌더링마다 다시 뽑으면
+ * 애니메이션이 매 틱 순간이동하듯 깨져버립니다.
+ */
+function createShatter(block) {
+  const shards = Array.from({ length: SHARD_COUNT }, (_, i) => ({
+    angle: (Math.PI * 2 * i) / SHARD_COUNT + (Math.random() - 0.5) * 0.6,
+    dist: 16 + Math.random() * 16,
+  }))
+  return { x: block.x, y: block.y, material: block.material, ticksLeft: SHATTER_TICKS, shards }
+}
+
+function ageShatters(shatters) {
+  return shatters.map((s) => ({ ...s, ticksLeft: s.ticksLeft - 1 })).filter((s) => s.ticksLeft > 0)
 }
 
 function createPigState(pig) {
@@ -193,13 +277,48 @@ function computeFloor(block, allBlocks) {
 }
 
 /**
+ * 옆으로 밀려난 블록이 다른 블록과 겹쳐 파고드는 것을 막습니다. 위아래로 쌓인
+ * 관계(세로로만 겹침)는 computeFloor가 이미 처리하므로 건드리지 않고, 가로로도
+ * 겹친 경우에만 두 블록을 겹친 만큼 갈라놓습니다. 가벼운 재질(유리)이 무거운
+ * 재질(돌)보다 더 많이 밀려나도록 massScale 비율로 나눠 밀어냅니다.
+ */
+function resolveBlockOverlaps(blocks) {
+  const result = blocks.map((b) => ({ ...b }))
+  for (let i = 0; i < result.length; i++) {
+    for (let j = i + 1; j < result.length; j++) {
+      const a = result[i]
+      const b = result[j]
+      const overlapX = a.w / 2 + b.w / 2 - Math.abs(a.x - b.x)
+      const overlapY = a.h / 2 + b.h / 2 - Math.abs(a.y - b.y)
+      if (overlapX <= 0 || overlapY <= 0 || overlapX >= overlapY) continue
+
+      const aMass = MATERIALS[a.material]?.massScale ?? 1
+      const bMass = MATERIALS[b.material]?.massScale ?? 1
+      const aShare = aMass / (aMass + bMass)
+      const dir = a.x <= b.x ? -1 : 1
+
+      a.x += overlapX * aShare * dir
+      b.x -= overlapX * (1 - aShare) * dir
+      if (dir < 0) {
+        if (a.vx > 0) a.vx = 0
+        if (b.vx < 0) b.vx = 0
+      } else {
+        if (a.vx < 0) a.vx = 0
+        if (b.vx > 0) b.vx = 0
+      }
+    }
+  }
+  return result
+}
+
+/**
  * 모든 블록에 중력/받침대/마찰/회전(넘어짐)을 한 틱만큼 진행시킵니다.
  * 서로 떠받쳐주는 관계이므로 개별 블록이 아니라 전체 배열을 한 번에 처리합니다.
  */
 function stepBlocks(allBlocks) {
   const floors = allBlocks.map((b) => computeFloor(b, allBlocks))
 
-  return allBlocks.map((block, i) => {
+  const stepped = allBlocks.map((block, i) => {
     // 개별 블록이 "정지 상태"라고 표시돼 있어도 건너뛰지 않습니다 - 바로 아래 블록이
     // 이번 틱에 치워졌다면 그 표시는 낡은 값이라 다시 바닥(floor)을 계산해야 합니다.
     const halfW = block.w / 2
@@ -252,6 +371,8 @@ function stepBlocks(allBlocks) {
 
     return { ...block, x, y, vx, vy, angle, angularVelocity, resting, hitCooldown: Math.max(0, block.hitCooldown - 1) }
   })
+
+  return resolveBlockOverlaps(stepped)
 }
 
 function isPigSettled(pig) {
@@ -325,10 +446,11 @@ export function createLevelState(levelIndex, baseScore = 0) {
   const level = getLevel(levelIndex)
   return {
     levelIndex,
-    birdsLeft: level.birdCount,
+    birdQueue: buildBirdQueue(level.birdCount),
     blocks: level.blocks.map(createBlockState),
     pigs: level.pigs.map(createPigState),
-    bird: null,
+    birds: [],
+    shatters: [],
     score: baseScore,
     status: 'aiming',
   }
@@ -356,59 +478,40 @@ export function predictTrajectory(vx, vy, maxPoints = 18) {
 }
 
 export function launch(state, vx, vy) {
-  if (state.status !== 'aiming' || state.bird) return state
+  if (state.status !== 'aiming' || state.birds.length > 0 || state.birdQueue.length === 0) return state
+  const [type, ...restQueue] = state.birdQueue
   return {
     ...state,
-    bird: { x: SLING_X, y: SLING_Y, vx, vy },
-    birdsLeft: state.birdsLeft - 1,
+    birds: [{ x: SLING_X, y: SLING_Y, vx, vy, r: BIRD_RADIUS, type, abilityUsed: false }],
+    birdQueue: restQueue,
     status: 'flying',
   }
 }
 
-export function tick(state) {
-  const blocksSettling = hasSettlingBlocks(state.blocks)
-  const pigsSettling = hasSettlingPigs(state.pigs)
-  const needsPhysics = blocksSettling || pigsSettling
+/** 새가 모두 착지/화면 밖으로 나갔을 때 다음 상태(클리어/실패/다음 조준)를 정합니다. */
+function resolveFlightEnd(state, blocks, pigs, score, birds, shatters) {
+  if (birds.length > 0) return { ...state, blocks, pigs, score, birds, shatters }
+  if (pigs.length === 0) return { ...state, blocks, pigs, score, birds: [], shatters, status: 'level-clear' }
+  if (state.birdQueue.length === 0) return { ...state, blocks, pigs, score, birds: [], shatters, status: 'level-failed' }
+  return { ...state, blocks, pigs, score, birds: [], shatters, status: 'aiming' }
+}
 
-  if (state.status !== 'flying' && !needsPhysics) return state
+/**
+ * 블록 하나가 맞았을 때의 반응을 재질에 맞게 계산합니다. hp가 다 떨어지면 블록을
+ * 제거하고(destroyed: true) 파편 이펙트를 만들며, 아니면 재질의 무게(massScale)에
+ * 맞춰 튕겨나갑니다 - 유리는 크게, 돌은 거의 안 밀려납니다.
+ */
+function damageBlock(block, pushDx, pushDy, impulseBase) {
+  const mass = MATERIALS[block.material]?.massScale ?? 1
+  const len = Math.hypot(pushDx, pushDy) || 1
+  const impulse = impulseBase * mass
+  const hp = block.hp - 1
 
-  const blocks = blocksSettling ? stepBlocks(state.blocks) : state.blocks
-  const pigs = needsPhysics ? stepPigs(state.pigs, blocks) : state.pigs
+  if (hp <= 0) return { destroyed: true }
 
-  if (state.status !== 'flying' || !state.bird) {
-    return needsPhysics ? { ...state, blocks, pigs } : state
-  }
-
-  const bird = { ...state.bird }
-  bird.x += bird.vx
-  bird.y += bird.vy
-  bird.vy += GRAVITY
-
-  let score = state.score
-  let hitSomething = false
-
-  const remainingPigs = []
-  for (const pig of pigs) {
-    if (circleCircleHit(bird.x, bird.y, BIRD_RADIUS, pig.x, pig.y, pig.r)) {
-      score += 100
-      hitSomething = true
-    } else {
-      remainingPigs.push(pig)
-    }
-  }
-
-  const nextBlocks = blocks.map((block) => {
-    if (block.hitCooldown > 0 || !circleRectHit(bird.x, bird.y, BIRD_RADIUS, block)) return block
-    hitSomething = true
-    if (!block.hit) score += 20
-
-    const pushDx = block.x - bird.x
-    const pushDy = block.y - bird.y
-    const len = Math.hypot(pushDx, pushDy) || 1
-    const speed = Math.hypot(bird.vx, bird.vy)
-    const impulse = BLOCK_PUSH_BASE + speed * BLOCK_PUSH_SCALE
-
-    return {
+  return {
+    destroyed: false,
+    block: {
       ...block,
       vx: block.vx + (pushDx / len) * impulse,
       vy: block.vy + (pushDy / len) * impulse - BLOCK_PUSH_LIFT,
@@ -416,26 +519,173 @@ export function tick(state) {
       resting: false,
       hit: true,
       hitCooldown: BLOCK_HIT_COOLDOWN_TICKS,
-    }
-  })
+      hp,
+    },
+  }
+}
 
-  if (hitSomething) {
-    bird.vx *= HIT_SPEED_RETAIN
-    bird.vy *= HIT_SPEED_RETAIN
+/** 새 한 마리가 이번 틱에 준 충격을 블록/돼지에 적용하고, 갱신된 블록/돼지/점수/파편을 돌려줍니다. */
+function applyBirdImpact(bird, blocks, pigs, score, shatters) {
+  let hitSomething = false
+
+  const remainingPigs = []
+  for (const pig of pigs) {
+    if (circleCircleHit(bird.x, bird.y, bird.r, pig.x, pig.y, pig.r)) {
+      score += 100
+      hitSomething = true
+    } else {
+      remainingPigs.push(pig)
+    }
   }
 
-  const landed = bird.y + BIRD_RADIUS >= GROUND_Y
-  const offscreen = bird.x - BIRD_RADIUS > ARENA_WIDTH || bird.x + BIRD_RADIUS < 0
+  const nextBlocks = []
+  const nextShatters = [...shatters]
+  for (const block of blocks) {
+    if (block.hitCooldown > 0 || !circleRectHit(bird.x, bird.y, bird.r, block)) {
+      nextBlocks.push(block)
+      continue
+    }
+    hitSomething = true
+    if (!block.hit) score += 20
 
-  if (landed || offscreen) {
-    if (remainingPigs.length === 0) {
-      return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'level-clear' }
+    const pushDx = block.x - bird.x
+    const pushDy = block.y - bird.y
+    const speed = Math.hypot(bird.vx, bird.vy)
+    const impulseBase = BLOCK_PUSH_BASE + speed * BLOCK_PUSH_SCALE
+    const result = damageBlock(block, pushDx, pushDy, impulseBase)
+
+    if (result.destroyed) {
+      score += 10
+      nextShatters.push(createShatter(block))
+    } else {
+      nextBlocks.push(result.block)
     }
-    if (state.birdsLeft <= 0) {
-      return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'level-failed' }
-    }
-    return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'aiming' }
   }
 
-  return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird }
+  return { blocks: nextBlocks, pigs: remainingPigs, score, hitSomething, shatters: nextShatters }
+}
+
+export function tick(state) {
+  const blocksSettling = hasSettlingBlocks(state.blocks)
+  const pigsSettling = hasSettlingPigs(state.pigs)
+  const shattersActive = state.shatters.length > 0
+  const needsPhysics = blocksSettling || pigsSettling
+
+  if (state.status !== 'flying' && !needsPhysics && !shattersActive) return state
+
+  let blocks = blocksSettling ? stepBlocks(state.blocks) : state.blocks
+  let pigs = needsPhysics ? stepPigs(state.pigs, blocks) : state.pigs
+  let shatters = shattersActive ? ageShatters(state.shatters) : state.shatters
+
+  if (state.status !== 'flying' || state.birds.length === 0) {
+    return needsPhysics || shattersActive ? { ...state, blocks, pigs, shatters } : state
+  }
+
+  let score = state.score
+  const survivingBirds = []
+
+  for (const prevBird of state.birds) {
+    const bird = { ...prevBird }
+    bird.x += bird.vx
+    bird.y += bird.vy
+    bird.vy += GRAVITY
+
+    const impact = applyBirdImpact(bird, blocks, pigs, score, shatters)
+    blocks = impact.blocks
+    pigs = impact.pigs
+    score = impact.score
+    shatters = impact.shatters
+
+    if (impact.hitSomething) {
+      bird.vx *= HIT_SPEED_RETAIN
+      bird.vy *= HIT_SPEED_RETAIN
+    }
+
+    const landed = bird.y + bird.r >= GROUND_Y
+    const offscreen = bird.x - bird.r > ARENA_WIDTH || bird.x + bird.r < 0
+    if (!landed && !offscreen) survivingBirds.push(bird)
+  }
+
+  return resolveFlightEnd(state, blocks, pigs, score, survivingBirds, shatters)
+}
+
+/**
+ * 날아가는 중 화면을 탭했을 때 호출됩니다. 능력을 아직 안 쓴 새들에 한해
+ * 종류별 효과를 적용합니다: 노랑=가속, 파랑=3방향 분열, 검은색=제자리 폭발(소멸).
+ * 빨강은 능력이 없어 그대로 지나칩니다.
+ */
+export function activateAbilities(state) {
+  if (state.status !== 'flying') return state
+
+  let blocks = state.blocks
+  let pigs = state.pigs
+  let score = state.score
+  let shatters = state.shatters
+  const nextBirds = []
+
+  for (const bird of state.birds) {
+    if (bird.abilityUsed || bird.type === 'red') {
+      nextBirds.push(bird)
+      continue
+    }
+
+    if (bird.type === 'yellow') {
+      nextBirds.push({ ...bird, vx: bird.vx * YELLOW_BOOST, vy: bird.vy * YELLOW_BOOST, abilityUsed: true })
+      continue
+    }
+
+    if (bird.type === 'blue') {
+      const speed = Math.hypot(bird.vx, bird.vy)
+      const angle = Math.atan2(bird.vy, bird.vx)
+      for (const offset of [-BLUE_SPLIT_ANGLE, 0, BLUE_SPLIT_ANGLE]) {
+        const a = angle + offset
+        nextBirds.push({
+          ...bird,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          r: bird.r * BLUE_SPLIT_RADIUS_SCALE,
+          abilityUsed: true,
+        })
+      }
+      continue
+    }
+
+    if (bird.type === 'black') {
+      const remainingPigs = []
+      for (const pig of pigs) {
+        if (Math.hypot(bird.x - pig.x, bird.y - pig.y) <= BLACK_EXPLOSION_RADIUS + pig.r) {
+          score += 100
+        } else {
+          remainingPigs.push(pig)
+        }
+      }
+      pigs = remainingPigs
+
+      const nextBlocks = []
+      for (const block of blocks) {
+        const dist = Math.hypot(bird.x - block.x, bird.y - block.y)
+        if (dist > BLACK_EXPLOSION_RADIUS) {
+          nextBlocks.push(block)
+          continue
+        }
+        if (!block.hit) score += 20
+        const pushDx = block.x - bird.x || 1
+        const pushDy = block.y - bird.y - 10
+        const result = damageBlock(block, pushDx, pushDy, BLACK_EXPLOSION_IMPULSE)
+        if (result.destroyed) {
+          score += 10
+          shatters = [...shatters, createShatter(block)]
+        } else {
+          nextBlocks.push(result.block)
+        }
+      }
+      blocks = nextBlocks
+      // 검은새는 터지면서 사라진다 - nextBirds에 다시 넣지 않는다
+      continue
+    }
+
+    nextBirds.push(bird)
+  }
+
+  return resolveFlightEnd(state, blocks, pigs, score, nextBirds, shatters)
 }
