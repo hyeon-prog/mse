@@ -20,8 +20,8 @@
   --neon-red: #ff3b3b;
   --neon-gold: #ffcf3d;
   --neon-cyan: #33e6ff;
-  --font-pixel: 'Press Start 2P', monospace;
-  --font-retro: 'VT323', monospace;
+  --font-pixel: 'Press Start 2P', 'GalmuriMono9', monospace;
+  --font-retro: 'VT323', 'GalmuriMono9', monospace;
 }
 
 * {
