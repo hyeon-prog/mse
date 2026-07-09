@@ -21,7 +21,13 @@ const TOPPLE_VX_FACTOR = 1.1
 const ANGULAR_DAMPING_AIR = 0.98
 const ANGULAR_DAMPING_GROUND = 0.7
 
-export const LEVELS = [
+const PROC_BLOCK_W = 20
+const PROC_BLOCK_H = 40
+const PROC_PIG_R = 14
+const PROC_ZONE_START = 360
+const PROC_ZONE_END = 620
+
+export const HANDCRAFTED_LEVELS = [
   {
     birdCount: 4,
     blocks: [
@@ -88,6 +94,57 @@ export const LEVELS = [
     ],
   },
 ]
+
+/**
+ * 미리 만든 스테이지(HANDCRAFTED_LEVELS)를 다 넘어서면 난이도를 계속 높여가며
+ * 절차적으로 스테이지를 생성합니다. 끝없이 이어지는 모드라 최종 승리 상태는 없고,
+ * 새가 다 떨어지면 그 회차가 끝납니다.
+ */
+function generateLevel(levelIndex) {
+  const tier = levelIndex - HANDCRAFTED_LEVELS.length + 1
+  const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
+  const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
+  const pigCount = Math.min(4 + tier, 10)
+  const birdCount = Math.min(pigCount + 2, 12)
+
+  const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
+  const towerXs = Array.from({ length: towerCount }, (_, t) =>
+    towerCount > 1 ? PROC_ZONE_START + spacing * t : (PROC_ZONE_START + PROC_ZONE_END) / 2,
+  )
+
+  const blocks = []
+  const towerTops = []
+  towerXs.forEach((x) => {
+    const height = 1 + Math.floor(Math.random() * maxHeight)
+    for (let h = 0; h < height; h++) {
+      blocks.push({ x, y: GROUND_Y - PROC_BLOCK_H / 2 - h * PROC_BLOCK_H, w: PROC_BLOCK_W, h: PROC_BLOCK_H })
+    }
+    towerTops.push(GROUND_Y - height * PROC_BLOCK_H)
+  })
+
+  const pigs = []
+  towerXs.forEach((x, i) => {
+    if (pigs.length < pigCount) pigs.push({ x, y: towerTops[i] - PROC_PIG_R, r: PROC_PIG_R })
+  })
+
+  for (let i = 0; i < towerXs.length - 1 && pigs.length < pigCount; i++) {
+    const midX = (towerXs[i] + towerXs[i + 1]) / 2
+    pigs.push({ x: midX, y: GROUND_Y - PROC_PIG_R, r: PROC_PIG_R })
+  }
+
+  let fallbackX = PROC_ZONE_END + 30
+  while (pigs.length < pigCount && fallbackX < ARENA_WIDTH - 20) {
+    pigs.push({ x: fallbackX, y: GROUND_Y - PROC_PIG_R, r: PROC_PIG_R })
+    fallbackX += 35
+  }
+
+  return { birdCount, blocks, pigs }
+}
+
+function getLevel(levelIndex) {
+  if (levelIndex < HANDCRAFTED_LEVELS.length) return HANDCRAFTED_LEVELS[levelIndex]
+  return generateLevel(levelIndex)
+}
 
 function createBlockState(block) {
   return { ...block, vx: 0, vy: 0, angle: 0, angularVelocity: 0, resting: true, hit: false, hitCooldown: 0 }
@@ -198,7 +255,7 @@ function circleCircleHit(x1, y1, r1, x2, y2, r2) {
 }
 
 export function createLevelState(levelIndex, baseScore = 0) {
-  const level = LEVELS[levelIndex]
+  const level = getLevel(levelIndex)
   return {
     levelIndex,
     birdsLeft: level.birdCount,
@@ -302,15 +359,7 @@ export function tick(state) {
 
   if (landed || offscreen) {
     if (remainingPigs.length === 0) {
-      const isLastLevel = state.levelIndex >= LEVELS.length - 1
-      return {
-        ...state,
-        blocks: nextBlocks,
-        pigs: remainingPigs,
-        score,
-        bird: null,
-        status: isLastLevel ? 'game-won' : 'level-clear',
-      }
+      return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'level-clear' }
     }
     if (state.birdsLeft <= 0) {
       return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'level-failed' }

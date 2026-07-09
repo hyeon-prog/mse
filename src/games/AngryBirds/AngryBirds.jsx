@@ -6,7 +6,6 @@ import {
   ARENA_WIDTH,
   GROUND_Y,
   LAUNCH_MULTIPLIER,
-  LEVELS,
   MAX_PULL,
   SLING_X,
   SLING_Y,
@@ -46,7 +45,7 @@ export default function AngryBirds() {
     if (currHitCount > prevHitCount) sfx.hit()
 
     if (prev.status !== curr.status) {
-      if (curr.status === 'level-clear' || curr.status === 'game-won') sfx.win()
+      if (curr.status === 'level-clear') sfx.win()
       else if (curr.status === 'level-failed') sfx.lose()
     }
 
@@ -135,7 +134,7 @@ export default function AngryBirds() {
     <div className="angry-birds">
       <div className="angry-birds-hud">
         <span>점수: {state.score}</span>
-        <span>스테이지: {state.levelIndex + 1}/{LEVELS.length}</span>
+        <span>스테이지: {state.levelIndex + 1}</span>
         <span>남은 새: {state.birdsLeft}</span>
         <span>남은 돼지: {state.pigs.length}</span>
       </div>
@@ -210,10 +209,11 @@ export default function AngryBirds() {
           </div>
         )}
 
-        {(state.status === 'level-failed' || state.status === 'game-won') && (
+        {state.status === 'level-failed' && (
           <div className="angry-birds-overlay">
             <div className="angry-birds-result">
-              <h3>{state.status === 'game-won' ? '모든 스테이지 클리어!' : '게임 오버'}</h3>
+              <h3>게임 오버</h3>
+              <p>도달한 스테이지: {state.levelIndex + 1}</p>
               <p>최종 점수: {state.score}</p>
               <input
                 type="text"
