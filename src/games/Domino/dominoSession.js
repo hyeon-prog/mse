@@ -14,12 +14,14 @@ import {
   setSeatConnected,
   startHostMatch,
   startHostNextRound,
+  stepMatch,
 } from './dominoHost.js'
 
 const PEER_ID_PREFIX = 'mse-domino-'
 const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const PLAYER_ID_KEY = 'mse:domino:player-id'
 const JOIN_TIMEOUT_MS = 15000
+const DRAW_DELAY_MS = 450
 
 // 브라우저마다 고정되는 플레이어 id — 새로고침 후 같은 자리로 복귀할 때 쓴다
 export function getMyPlayerId() {
@@ -72,6 +74,7 @@ export async function hostRoom(nickname, mode, targetScore, events) {
 
   let room = createHostRoom(roomCode, myPlayerId, nickname, mode, targetScore)
   const connections = new Map()
+  let advanceTimer = null
 
   function broadcast() {
     if (!room.match) {
@@ -89,6 +92,20 @@ export async function hostRoom(nickname, mode, targetScore, events) {
       const view = deriveView(room, playerId)
       if (view) conn.send({ t: 'view', view })
     }
+  }
+
+  // 낼 수 없는 사람이 있으면 한 장씩 뽑거나 패스하는 것을 delay를 두고 반복 —
+  // 한 단계 진행할 때마다 broadcast해서 모두의 화면에 "한 장씩 가져가는" 게 보인다.
+  function scheduleAdvance() {
+    if (!room.match || room.match.status !== 'playing') return
+    const stepped = stepMatch(room.match)
+    if (stepped === room.match) return
+    clearTimeout(advanceTimer)
+    advanceTimer = setTimeout(() => {
+      room = { ...room, match: stepped }
+      broadcast()
+      scheduleAdvance()
+    }, DRAW_DELAY_MS)
   }
 
   peer.on('connection', (conn) => {
@@ -110,6 +127,7 @@ export async function hostRoom(nickname, mode, targetScore, events) {
         if (next !== room) {
           room = next
           broadcast()
+          scheduleAdvance()
         } else {
           // 무효/중복 착수 — 상태는 그대로 두고 그 사람에게 현재 뷰만 다시 보낸다
           const view = deriveView(room, msg.playerId)
@@ -146,6 +164,7 @@ export async function hostRoom(nickname, mode, targetScore, events) {
       if (next !== room) {
         room = next
         broadcast()
+        scheduleAdvance()
       }
     },
     nextRound: () => {
@@ -153,6 +172,7 @@ export async function hostRoom(nickname, mode, targetScore, events) {
       if (next !== room) {
         room = next
         broadcast()
+        scheduleAdvance()
       }
     },
     play: (move) => {
@@ -160,9 +180,11 @@ export async function hostRoom(nickname, mode, targetScore, events) {
       if (next !== room) {
         room = next
         broadcast()
+        scheduleAdvance()
       }
     },
     close: () => {
+      clearTimeout(advanceTimer)
       peer?.destroy()
       events.onClosed()
     },

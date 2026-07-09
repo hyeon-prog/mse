@@ -289,7 +289,10 @@ export default function DominoOnline({ initialRoomCode, onBack }) {
   return (
     <div className="domino">
       <div className="domino-hud">
-        <span>턴: {label(view.currentTurn)}</span>
+        <span>
+          턴: {label(view.currentTurn)}
+          {view.isDrawing && <span className="domino-drawing-indicator"> · 카드 가져가는 중...</span>}
+        </span>
         <span>보유고 {view.boneyardCount}장</span>
         <span className="domino-hud-scores">
           {view.playerOrder.map((id) => (
