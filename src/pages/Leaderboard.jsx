@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { games } from '../games/gameConfig.js'
+import RoomSelector from '../components/RoomSelector.jsx'
 import { subscribeScores } from '../utils/leaderboard.js'
+import { getSelectedUniversity, leaveUniversity, setSelectedUniversity } from '../utils/university.js'
 
 const PERIOD_TABS = [
   { id: 'daily', label: '일간' },
@@ -10,6 +12,7 @@ const PERIOD_TABS = [
 ]
 
 export default function Leaderboard() {
+  const [university, setUniversity] = useState(getSelectedUniversity)
   const [activeGameId, setActiveGameId] = useState(games[0]?.id)
   const [activePeriod, setActivePeriod] = useState('all')
   const [scores, setScores] = useState([])
@@ -17,11 +20,13 @@ export default function Leaderboard() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (!university) return
     setLoading(true)
     setError('')
     const unsubscribe = subscribeScores(
       activeGameId,
       activePeriod,
+      university,
       (nextScores) => {
         setScores(nextScores)
         setLoading(false)
@@ -32,11 +37,39 @@ export default function Leaderboard() {
       },
     )
     return unsubscribe
-  }, [activeGameId, activePeriod])
+  }, [activeGameId, activePeriod, university])
+
+  const handleJoin = (name) => {
+    setSelectedUniversity(name)
+    setUniversity(name)
+  }
+
+  const handleLeave = () => {
+    leaveUniversity()
+    setUniversity(null)
+  }
+
+  if (!university) {
+    return (
+      <section className="leaderboard">
+        <h1>랭킹</h1>
+        <RoomSelector onJoin={handleJoin} />
+      </section>
+    )
+  }
 
   return (
     <section className="leaderboard">
-      <h1>랭킹</h1>
+      <div className="leaderboard-room-header">
+        <h1>랭킹</h1>
+        <div className="leaderboard-room-badge">
+          🏫 {university}
+          <button className="leaderboard-room-leave" onClick={handleLeave}>
+            방 변경
+          </button>
+        </div>
+      </div>
+
       <div className="leaderboard-tabs">
         {games.map((game) => (
           <button

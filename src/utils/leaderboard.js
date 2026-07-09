@@ -10,6 +10,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../firebase.js'
+import { getSelectedUniversity } from './university.js'
 
 const scoresRef = collection(db, 'scores')
 
@@ -30,17 +31,12 @@ function getPeriodStart(period) {
   return null
 }
 
-export function subscribeScores(gameId, period, onUpdate, onError) {
+export function subscribeScores(gameId, period, university, onUpdate, onError) {
   const startDate = getPeriodStart(period)
+  const filters = [where('gameId', '==', gameId), where('university', '==', university)]
   const q = startDate
-    ? query(
-        scoresRef,
-        where('gameId', '==', gameId),
-        where('createdAt', '>=', Timestamp.fromDate(startDate)),
-        orderBy('createdAt', 'desc'),
-        limit(200),
-      )
-    : query(scoresRef, where('gameId', '==', gameId), orderBy('score', 'desc'), limit(10))
+    ? query(scoresRef, ...filters, where('createdAt', '>=', Timestamp.fromDate(startDate)), orderBy('createdAt', 'desc'), limit(200))
+    : query(scoresRef, ...filters, orderBy('score', 'desc'), limit(10))
 
   return onSnapshot(
     q,
@@ -59,10 +55,12 @@ export function subscribeScores(gameId, period, onUpdate, onError) {
 }
 
 export async function addScore(gameId, name, score) {
+  const university = getSelectedUniversity()
   await addDoc(scoresRef, {
     gameId,
     name: (name || '익명').slice(0, 12),
     score,
     createdAt: serverTimestamp(),
+    ...(university ? { university } : {}),
   })
 }
