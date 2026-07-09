@@ -51,8 +51,18 @@ function generateRowsAhead(game) {
   const maxRow = game.rowIndex + VISIBLE_ROWS_AHEAD
 
   while (game.nextRowToGenerate <= maxRow) {
-    const delta = Math.random() < 0.5 ? -1 : 1
-    const lane = clampLane(game.lastGeneratedLane + delta)
+    // 경계에서는 clampLane으로 값을 눌러 담지 않습니다 - 그러면 -1이나 +1을 뽑아도
+    // 결과 레인이 이전과 같아져 "절대 같은 자리 반복 없음" 규칙이 깨집니다.
+    // 대신 경계에서는 벗어나는 방향을 강제로 선택합니다.
+    let delta
+    if (game.lastGeneratedLane <= 0) {
+      delta = 1
+    } else if (game.lastGeneratedLane >= LANE_COUNT - 1) {
+      delta = -1
+    } else {
+      delta = Math.random() < 0.5 ? -1 : 1
+    }
+    const lane = game.lastGeneratedLane + delta
     game.platforms.push({
       rowIndex: game.nextRowToGenerate,
       lane,

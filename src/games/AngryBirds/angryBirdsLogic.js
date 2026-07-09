@@ -150,6 +150,10 @@ function createBlockState(block) {
   return { ...block, vx: 0, vy: 0, angle: 0, angularVelocity: 0, resting: true, hit: false, hitCooldown: 0 }
 }
 
+function createPigState(pig) {
+  return { ...pig, vx: 0, vy: 0, resting: true }
+}
+
 function isBlockFullySettled(block) {
   return (
     block.resting &&
@@ -246,6 +250,65 @@ function stepBlocks(allBlocks) {
   })
 }
 
+function isPigSettled(pig) {
+  return pig.resting && Math.abs(pig.vx) < BLOCK_REST_EPSILON && Math.abs(pig.vy) < BLOCK_REST_EPSILON
+}
+
+export function hasSettlingPigs(pigs) {
+  return pigs.some((p) => !isPigSettled(p))
+}
+
+/** 블록의 computeFloor와 같은 개념이지만 원(돼지) 기준입니다. */
+function computeCircleFloor(cx, cy, r, blocks) {
+  let floor = GROUND_Y
+  for (const block of blocks) {
+    const halfW = block.w / 2
+    const halfH = block.h / 2
+    const overlapsX = Math.abs(cx - block.x) < halfW + r - 2
+    const blockTop = block.y - halfH
+    if (overlapsX && blockTop >= cy && blockTop < floor) {
+      floor = blockTop
+    }
+  }
+  return floor
+}
+
+/**
+ * 돼지가 서 있던 블록이 날아가면(받침이 사라지면) 돼지도 중력을 받아 떨어집니다.
+ * 블록과 마찬가지로 "정지 상태" 표시를 믿지 않고 매번 바닥을 다시 계산합니다.
+ */
+function stepPigs(pigs, blocks) {
+  return pigs.map((pig) => {
+    const floor = computeCircleFloor(pig.x, pig.y, pig.r, blocks)
+
+    let vx = pig.vx
+    let vy = pig.vy + GRAVITY
+    let x = pig.x + vx
+    let y = pig.y + vy
+
+    let resting = false
+    if (y + pig.r >= floor) {
+      y = floor - pig.r
+      vy = 0
+      vx *= BLOCK_FRICTION
+      resting = true
+    }
+
+    if (x - pig.r < 0) {
+      x = pig.r
+      vx = 0
+    } else if (x + pig.r > ARENA_WIDTH) {
+      x = ARENA_WIDTH - pig.r
+      vx = 0
+    }
+
+    if (Math.abs(vx) < BLOCK_REST_EPSILON) vx = 0
+    if (Math.abs(vy) < BLOCK_REST_EPSILON) vy = 0
+
+    return { ...pig, x, y, vx, vy, resting }
+  })
+}
+
 function circleRectHit(cx, cy, r, rect) {
   return Math.abs(cx - rect.x) <= rect.w / 2 + r && Math.abs(cy - rect.y) <= rect.h / 2 + r
 }
@@ -260,7 +323,7 @@ export function createLevelState(levelIndex, baseScore = 0) {
     levelIndex,
     birdsLeft: level.birdCount,
     blocks: level.blocks.map(createBlockState),
-    pigs: level.pigs.map((p) => ({ ...p })),
+    pigs: level.pigs.map(createPigState),
     bird: null,
     score: baseScore,
     status: 'aiming',
@@ -300,13 +363,16 @@ export function launch(state, vx, vy) {
 
 export function tick(state) {
   const blocksSettling = hasSettlingBlocks(state.blocks)
+  const pigsSettling = hasSettlingPigs(state.pigs)
+  const needsPhysics = blocksSettling || pigsSettling
 
-  if (state.status !== 'flying' && !blocksSettling) return state
+  if (state.status !== 'flying' && !needsPhysics) return state
 
   const blocks = blocksSettling ? stepBlocks(state.blocks) : state.blocks
+  const pigs = needsPhysics ? stepPigs(state.pigs, blocks) : state.pigs
 
   if (state.status !== 'flying' || !state.bird) {
-    return blocksSettling ? { ...state, blocks } : state
+    return needsPhysics ? { ...state, blocks, pigs } : state
   }
 
   const bird = { ...state.bird }
@@ -318,7 +384,7 @@ export function tick(state) {
   let hitSomething = false
 
   const remainingPigs = []
-  for (const pig of state.pigs) {
+  for (const pig of pigs) {
     if (circleCircleHit(bird.x, bird.y, BIRD_RADIUS, pig.x, pig.y, pig.r)) {
       score += 100
       hitSomething = true
