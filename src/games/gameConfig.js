@@ -7,6 +7,7 @@ import Tekken from './Tekken/Tekken.jsx'
 import AngryBirds from './AngryBirds/AngryBirds.jsx'
 import Domino from './Domino/Domino.jsx'
 import InfiniteStairs from './InfiniteStairs/InfiniteStairs.jsx'
+import WatermelonGame from './WatermelonGame/WatermelonGame.jsx'
 
 export const games = [
   {
@@ -71,6 +72,13 @@ export const games = [
     description: '다음 계단이 있는 방향으로 박자에 맞춰 ← → 를 눌러 끝없이 올라가보세요.',
     icon: '🪜',
     component: InfiniteStairs,
+  },
+  {
+    id: 'watermelon-game',
+    name: '수박게임',
+    description: '같은 과일끼리 부딫혀 합치고, 최종 진화체인 수박까지 만들어보세요.',
+    icon: '🍉',
+    component: WatermelonGame,
   },
 ]
 
