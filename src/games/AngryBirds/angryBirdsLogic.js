@@ -146,12 +146,16 @@ function getLevel(levelIndex) {
   return generateLevel(levelIndex)
 }
 
+// resting을 true로 미리 믿지 않고 false로 시작합니다 - 레벨 데이터에 있는 좌표가
+// 실제로 바닥/블록에 딱 맞아떨어지는지는 물리 엔진이 첫 틱에 검증하게 둡니다.
+// 좌표가 어긋나 있으면(예: 어떤 블록과도 안 겹치는 곳에 놓인 돼지) 레벨 시작과
+// 동시에 중력을 받아 제자리로 떨어지고, 이미 맞는 좌표라면 변화 없이 그대로 멈춥니다.
 function createBlockState(block) {
-  return { ...block, vx: 0, vy: 0, angle: 0, angularVelocity: 0, resting: true, hit: false, hitCooldown: 0 }
+  return { ...block, vx: 0, vy: 0, angle: 0, angularVelocity: 0, resting: false, hit: false, hitCooldown: 0 }
 }
 
 function createPigState(pig) {
-  return { ...pig, vx: 0, vy: 0, resting: true }
+  return { ...pig, vx: 0, vy: 0, resting: false }
 }
 
 function isBlockFullySettled(block) {
