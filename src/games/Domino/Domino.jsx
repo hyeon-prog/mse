@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
+import DominoOnline from './DominoOnline.jsx'
+import DominoTile from './DominoTile.jsx'
 import {
   canPlay,
   chooseAiMove,
@@ -16,16 +18,6 @@ const AI_MOVE_DELAY_MS = 500
 const HUMAN_ID = 'human'
 const DEFAULT_TARGET_SCORE = 100
 
-const PIP_LAYOUTS = {
-  0: [],
-  1: [4],
-  2: [0, 8],
-  3: [0, 4, 8],
-  4: [0, 2, 6, 8],
-  5: [0, 2, 4, 6, 8],
-  6: [0, 2, 3, 5, 6, 8],
-}
-
 const DIFFICULTY_OPTIONS = [
   { value: 'easy', label: '쉬움' },
   { value: 'medium', label: '보통' },
@@ -37,33 +29,12 @@ function playerLabel(id) {
   return `AI ${id.split('-')[1]}`
 }
 
-function PipFace({ value }) {
-  const active = new Set(PIP_LAYOUTS[value] ?? [])
-  return (
-    <div className="domino-tile-face">
-      {Array.from({ length: 9 }, (_, i) => (
-        <span key={i} className={active.has(i) ? 'domino-pip on' : 'domino-pip'} />
-      ))}
-    </div>
-  )
-}
-
-function DominoTile({ tile, flipped = false, vertical = false, faceDown = false }) {
-  const classNames = ['domino-tile', vertical ? 'vertical' : 'horizontal', faceDown ? 'face-down' : '']
-  if (faceDown) {
-    return <div className={classNames.join(' ')} aria-hidden="true" />
-  }
-  const [first, second] = flipped ? [tile.b, tile.a] : [tile.a, tile.b]
-  return (
-    <div className={classNames.join(' ')}>
-      <PipFace value={first} />
-      <span className="domino-tile-divider" />
-      <PipFace value={second} />
-    </div>
-  )
+function initialRoomCodeFromUrl() {
+  return new URLSearchParams(window.location.search).get('room')?.toUpperCase() ?? ''
 }
 
 export default function Domino() {
+  const [online, setOnline] = useState(() => Boolean(initialRoomCodeFromUrl()))
   const [match, setMatch] = useState(null)
   const [playerCount, setPlayerCount] = useState(4)
   const [difficulty, setDifficulty] = useState('medium')
@@ -150,10 +121,22 @@ export default function Domino() {
     }
   }
 
+  if (online) {
+    return (
+      <DominoOnline
+        initialRoomCode={initialRoomCodeFromUrl()}
+        onBack={() => {
+          setOnline(false)
+          window.history.replaceState(null, '', window.location.pathname)
+        }}
+      />
+    )
+  }
+
   if (!match) {
     return (
       <div className="domino domino-select">
-        <p>이집트 카페 스타일 블록 도미노(더블식스). AI와 대결하세요.</p>
+        <p>이집트 카페 스타일 블록 도미노(더블식스). AI와 대결하거나 친구와 온라인으로 겨루세요.</p>
 
         <div className="domino-option-group">
           <span className="domino-option-label">인원수</span>
@@ -217,9 +200,14 @@ export default function Domino() {
           </div>
         )}
 
-        <button className="btn btn-primary domino-start-btn" onClick={startMatch}>
-          게임 시작
-        </button>
+        <div className="domino-option-buttons domino-start-btn">
+          <button className="btn btn-primary" onClick={startMatch}>
+            게임 시작
+          </button>
+          <button className="btn btn-secondary" onClick={() => setOnline(true)}>
+            🌐 온라인 멀티플레이
+          </button>
+        </div>
       </div>
     )
   }

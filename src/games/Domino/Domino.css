@@ -266,3 +266,45 @@
   font-size: 1.05rem;
   text-align: center;
 }
+
+/* 온라인 대기실 */
+.domino-lobby-code {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+}
+
+.domino-share-row {
+  align-items: stretch;
+  width: 100%;
+  max-width: 460px;
+}
+
+.domino-share-link {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.domino-lobby-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.domino-lobby-players li {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 3px solid var(--border-color);
+  box-shadow: 4px 4px 0 var(--pixel-shadow);
+  font-family: var(--font-retro);
+  font-size: 1.15rem;
+}
