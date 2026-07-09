@@ -62,18 +62,33 @@
 .ab-bird {
   position: absolute;
   transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
   border-radius: 50%;
   border: 2px solid var(--border-color);
   box-shadow: 2px 2px 0 var(--pixel-shadow);
 }
 
-.ab-bird-glyph {
-  display: block;
-  transform: scaleX(-1); /* 발사 방향(오른쪽)을 보도록 좌우 반전 */
+/* 눈 - 새가 바라보는(오른쪽) 방향에 가깝게 찍는다 */
+.ab-bird::before {
+  content: '';
+  position: absolute;
+  top: 30%;
+  right: 22%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--border-color);
+}
+
+/* 부리 - 발사 방향인 오른쪽을 향한 삼각형 */
+.ab-bird::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  transform: translateY(-50%);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 7px solid #f2a93b;
 }
 
 .ab-bird.draggable {

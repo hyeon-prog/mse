@@ -219,9 +219,7 @@ export default function AngryBirds() {
             key={i}
             className={`ab-bird type-${bird.type}`}
             style={{ left: bird.x, top: bird.y, width: bird.r * 2, height: bird.r * 2 }}
-          >
-            <span className="ab-bird-glyph">🐦</span>
-          </div>
+          />
         ))}
 
         {state.birds.length === 0 && (
@@ -229,9 +227,7 @@ export default function AngryBirds() {
             className={`ab-bird type-${state.birdQueue[0] ?? 'red'}` + (state.status === 'aiming' ? ' draggable' : '')}
             style={{ left: birdX, top: birdY, width: BIRD_RADIUS * 2, height: BIRD_RADIUS * 2 }}
             onPointerDown={handleBirdPointerDown}
-          >
-            <span className="ab-bird-glyph">🐦</span>
-          </div>
+          />
         )}
 
         {state.status === 'level-clear' && (

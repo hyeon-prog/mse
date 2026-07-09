@@ -44,24 +44,24 @@ export const BLUE_SPLIT_RADIUS_SCALE = 0.72
 export const BLACK_EXPLOSION_RADIUS = 70
 export const BLACK_EXPLOSION_IMPULSE = 10
 
-const SPECIAL_BIRD_CYCLE = ['yellow', 'blue', 'black']
+const SPECIAL_BIRD_TYPES = ['yellow', 'blue', 'black']
+const SPECIAL_BIRD_CHANCE = 0.4
 
 /**
- * 스테이지의 새 대기열을 만듭니다. 첫 새는 항상 빨강(기본형)이고,
- * 이후 3마리마다 한 번씩 특수 능력 새(노랑→파랑→검은색 순환)를 섞습니다.
+ * 스테이지의 새 대기열을 만듭니다. 첫 새는 항상 빨강(기본형)이라 시작은 항상
+ * 안정적이고, 이후 새들은 매번 무작위로 빨강 또는 특수 능력 새(노랑/파랑/검은색)
+ * 중 하나로 정해집니다 - 고정된 순환 순서 없이 매 판마다 등장 패턴이 달라집니다.
  */
 function buildBirdQueue(count) {
-  const queue = []
-  let specialCursor = 0
-  for (let i = 0; i < count; i++) {
-    if (i > 0 && i % 3 === 0) {
-      queue.push(SPECIAL_BIRD_CYCLE[specialCursor % SPECIAL_BIRD_CYCLE.length])
-      specialCursor++
+  const queue = ['red']
+  for (let i = 1; i < count; i++) {
+    if (Math.random() < SPECIAL_BIRD_CHANCE) {
+      queue.push(SPECIAL_BIRD_TYPES[Math.floor(Math.random() * SPECIAL_BIRD_TYPES.length)])
     } else {
       queue.push('red')
     }
   }
-  return queue
+  return queue.slice(0, count)
 }
 
 export const HANDCRAFTED_LEVELS = [
@@ -86,7 +86,7 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 4,
+    birdCount: 3,
     blocks: [
       { x: 420, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
       { x: 500, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
@@ -100,7 +100,7 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 4,
+    birdCount: 3,
     blocks: [
       { x: 400, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
       { x: 400, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
@@ -114,7 +114,7 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 5,
+    birdCount: 4,
     blocks: [
       { x: 380, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
       { x: 380, y: GROUND_Y - 60, w: 20, h: 40, material: 'wood' },
@@ -140,7 +140,7 @@ export const HANDCRAFTED_LEVELS = [
 /** 티어가 올라갈수록 돌(단단함) 비중을 늘려 구조물을 허무는 데 더 신중한 조준이 필요하게 합니다. */
 function pickMaterial(tier) {
   const roll = Math.random()
-  const stoneChance = Math.min(0.15 + tier * 0.04, 0.45)
+  const stoneChance = Math.min(0.2 + tier * 0.05, 0.5)
   const glassChance = 0.2
   if (roll < stoneChance) return 'stone'
   if (roll < stoneChance + glassChance) return 'glass'
@@ -152,7 +152,7 @@ function generateLevel(levelIndex) {
   const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
   const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
   const pigCount = Math.min(4 + tier, 10)
-  const birdCount = Math.min(pigCount + 1, 10)
+  const birdCount = Math.min(pigCount, 10)
 
   const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
   const towerXs = Array.from({ length: towerCount }, (_, t) =>
@@ -398,9 +398,22 @@ function computeCircleFloor(cx, cy, r, blocks) {
   return floor
 }
 
+const FALL_POP_SPEED = 7 // 이 속도(픽셀/틱) 이상으로 떨어지다 바닥/블록에 닿으면 충격으로 터진다
+const CRUSH_OVERLAP = 5 // 이만큼 이상 블록과 파고들면 "짓눌렸다"고 보고 터진다 (얹혀 쉬는 정도는 걸리지 않게 여유를 둔다)
+
+/** 블록에 짓눌렸는지(구조물이 무너지며 위에서 덮쳤는지) 확인합니다. */
+function isCrushedByBlock(pig, blocks) {
+  return blocks.some((block) => {
+    const overlapX = block.w / 2 + pig.r - Math.abs(pig.x - block.x)
+    const overlapY = block.h / 2 + pig.r - Math.abs(pig.y - block.y)
+    return overlapX > CRUSH_OVERLAP && overlapY > CRUSH_OVERLAP
+  })
+}
+
 /**
  * 돼지가 서 있던 블록이 날아가면(받침이 사라지면) 돼지도 중력을 받아 떨어집니다.
  * 블록과 마찬가지로 "정지 상태" 표시를 믿지 않고 매번 바닥을 다시 계산합니다.
+ * 떨어지다 세게 부딫히거나(낙하 충격) 무너지는 블록에 짓눌리면 그 자리에서 터집니다.
  */
 function stepPigs(pigs, blocks) {
   return pigs.map((pig) => {
@@ -412,7 +425,9 @@ function stepPigs(pigs, blocks) {
     let y = pig.y + vy
 
     let resting = false
+    let popped = false
     if (y + pig.r >= floor) {
+      if (vy > FALL_POP_SPEED) popped = true
       y = floor - pig.r
       vy = 0
       vx *= BLOCK_FRICTION
@@ -430,7 +445,9 @@ function stepPigs(pigs, blocks) {
     if (Math.abs(vx) < BLOCK_REST_EPSILON) vx = 0
     if (Math.abs(vy) < BLOCK_REST_EPSILON) vy = 0
 
-    return { ...pig, x, y, vx, vy, resting }
+    if (!popped && isCrushedByBlock({ x, y, r: pig.r }, blocks)) popped = true
+
+    return { ...pig, x, y, vx, vy, resting, popped }
   })
 }
 
@@ -576,12 +593,23 @@ export function tick(state) {
   let blocks = blocksSettling ? stepBlocks(state.blocks) : state.blocks
   let pigs = needsPhysics ? stepPigs(state.pigs, blocks) : state.pigs
   let shatters = shattersActive ? ageShatters(state.shatters) : state.shatters
+  let score = state.score
 
-  if (state.status !== 'flying' || state.birds.length === 0) {
-    return needsPhysics || shattersActive ? { ...state, blocks, pigs, shatters } : state
+  // 낙하 충격/붕괴로 짓눌려 죽은 돼지는 새가 직접 맞힌 것과 똑같이 점수를 주고 제거한다.
+  const poppedByImpact = pigs.some((p) => p.popped)
+  if (poppedByImpact) {
+    score += pigs.filter((p) => p.popped).length * 100
+    pigs = pigs.filter((p) => !p.popped)
   }
 
-  let score = state.score
+  if (state.status !== 'flying' || state.birds.length === 0) {
+    if (state.status === 'aiming' && pigs.length === 0 && state.pigs.length > 0) {
+      return { ...state, blocks, pigs, shatters, score, status: 'level-clear' }
+    }
+    if (needsPhysics || shattersActive || poppedByImpact) return { ...state, blocks, pigs, shatters, score }
+    return state
+  }
+
   const survivingBirds = []
 
   for (const prevBird of state.birds) {
