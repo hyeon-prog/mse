@@ -4,27 +4,23 @@ export const ANCHOR_Y = 360
 export const CHARACTER_RADIUS = 14
 export const LANE_COUNT = 5
 export const LANE_WIDTH = LOGICAL_WIDTH / LANE_COUNT
+export const ROW_HEIGHT = 72
 
 const LANE_EASE_SPEED = 14
-const BASE_SCROLL_SPEED = 55
-const SPEED_GROWTH_PER_100 = 0.05
-const ROW_HEIGHT = 72
-const ROW_HEIGHT_JITTER = 14
-const PLATFORM_LANE_SPAN = 2
+const SCROLL_EASE_SPEED = 10
+const BEAT_MS_START = 650
+const BEAT_MS_MIN = 280
+const BEAT_DECAY_PER_ROW = 3.5
+const VISIBLE_ROWS_AHEAD = Math.ceil(LOGICAL_HEIGHT / ROW_HEIGHT) + 2
 const VANISH_DELAY_MS = 450
 const VANISH_FADE_MS = 350
-const OBSTACLE_LANE_SPAN = 1
 const OBSTACLE_DRAW_WIDTH = LANE_WIDTH * 0.55
 const OBSTACLE_HEIGHT = 26
 const OBSTACLE_BASE_INTERVAL_ROWS = 5
 const COLLISION_Y_TOLERANCE = 22
 
-function randRange(min, max) {
-  return min + Math.random() * (max - min)
-}
-
-function randomLaneStart(span) {
-  return Math.floor(randRange(0, LANE_COUNT - span + 1))
+function clampLane(lane) {
+  return Math.max(0, Math.min(LANE_COUNT - 1, lane))
 }
 
 function randomPlatformType(score) {
@@ -34,8 +30,8 @@ function randomPlatformType(score) {
   return 'normal'
 }
 
-function currentSpeed(score) {
-  return BASE_SCROLL_SPEED * (1 + SPEED_GROWTH_PER_100 * Math.floor(score / 100))
+function beatMsForScore(score) {
+  return Math.max(BEAT_MS_MIN, BEAT_MS_START - score * BEAT_DECAY_PER_ROW)
 }
 
 function obstacleIntervalRows(score) {
@@ -54,92 +50,100 @@ export function toScreenY(game, worldY) {
   return ANCHOR_Y - (worldY - game.scrollY)
 }
 
-function spawnPlatformRow(game) {
-  const type = randomPlatformType(game.score)
-  const startLane = randomLaneStart(PLATFORM_LANE_SPAN)
-  game.platforms.push({
-    worldY: game.nextPlatformWorldY,
-    startLane,
-    baseLane: startLane,
-    laneSpan: PLATFORM_LANE_SPAN,
-    type,
-    resolved: false,
-    stepped: false,
-    vanishAt: null,
-  })
-  game.nextPlatformWorldY += ROW_HEIGHT + randRange(-ROW_HEIGHT_JITTER, ROW_HEIGHT_JITTER)
-}
+/**
+ * 다음 발판의 레인은 바로 이전 발판 레인에서 -1/0/+1칸까지만 벗어나도록 생성합니다
+ * (바로 위아래 블럭은 좌우로 1칸까지만 차이나게).
+ */
+function generateRowsAhead(game) {
+  const maxRow = game.rowIndex + VISIBLE_ROWS_AHEAD
 
-function spawnObstacle(game) {
-  const startLane = randomLaneStart(OBSTACLE_LANE_SPAN)
-  game.obstacles.push({
-    worldY: game.nextObstacleWorldY,
-    startLane,
-    baseLane: startLane,
-    laneSpan: OBSTACLE_LANE_SPAN,
-    moving: Math.random() < 0.5,
-    phase: Math.random() * Math.PI * 2,
-  })
-  game.nextObstacleWorldY += ROW_HEIGHT * obstacleIntervalRows(game.score)
+  while (game.nextRowToGenerate <= maxRow) {
+    const delta = Math.floor(Math.random() * 3) - 1
+    const lane = clampLane(game.lastGeneratedLane + delta)
+    game.platforms.push({
+      rowIndex: game.nextRowToGenerate,
+      lane,
+      baseLane: lane,
+      type: randomPlatformType(game.score),
+      stepped: false,
+      vanishAt: null,
+    })
+    game.lastGeneratedLane = lane
+    game.nextRowToGenerate += 1
+  }
+
+  while (game.nextObstacleRow <= maxRow) {
+    const lane = Math.floor(Math.random() * LANE_COUNT)
+    game.obstacles.push({
+      rowIndex: game.nextObstacleRow,
+      lane,
+      baseLane: lane,
+      moving: Math.random() < 0.5,
+      phase: Math.random() * Math.PI * 2,
+    })
+    game.nextObstacleRow += obstacleIntervalRows(game.score)
+  }
 }
 
 export function createGame() {
-  const startLane = Math.max(0, Math.min(LANE_COUNT - PLATFORM_LANE_SPAN, Math.floor(LANE_COUNT / 2)))
   const lane = Math.floor(LANE_COUNT / 2)
-  return {
+  const game = {
+    rowIndex: 0,
+    targetScrollY: 0,
     scrollY: 0,
-    speed: BASE_SCROLL_SPEED,
+    beatMs: BEAT_MS_START,
+    beatTimer: 0,
     lane,
     displayX: laneCenterX(lane),
     elapsedMs: 0,
     score: 0,
     status: 'playing',
-    platforms: [
-      {
-        worldY: 0,
-        startLane,
-        baseLane: startLane,
-        laneSpan: PLATFORM_LANE_SPAN,
-        type: 'normal',
-        resolved: true,
-        stepped: true,
-        vanishAt: null,
-      },
-    ],
+    platforms: [{ rowIndex: 0, lane, baseLane: lane, type: 'normal', stepped: true, vanishAt: null }],
     obstacles: [],
-    nextPlatformWorldY: ROW_HEIGHT,
-    nextObstacleWorldY: ROW_HEIGHT * OBSTACLE_BASE_INTERVAL_ROWS,
+    nextRowToGenerate: 1,
+    nextObstacleRow: OBSTACLE_BASE_INTERVAL_ROWS,
+    lastGeneratedLane: lane,
   }
+  generateRowsAhead(game)
+  return game
 }
 
 /** 좌/우 입력 한 번에 정확히 한 칸(레인)만 이동합니다 - 누르고 있어도 미끄러지지 않음. */
 export function moveLane(game, delta) {
   if (!game || game.status !== 'playing') return
-  game.lane = Math.max(0, Math.min(LANE_COUNT - 1, game.lane + delta))
+  game.lane = clampLane(game.lane + delta)
+}
+
+function advanceRow(game) {
+  game.rowIndex += 1
+  game.targetScrollY = game.rowIndex * ROW_HEIGHT
+  game.score = game.rowIndex
+  game.beatMs = beatMsForScore(game.score)
+
+  generateRowsAhead(game)
+
+  const row = game.platforms.find((p) => p.rowIndex === game.rowIndex)
+  if (!row) return
+  if (game.lane === row.lane) {
+    row.stepped = true
+  } else {
+    game.status = 'over'
+  }
 }
 
 export function update(game, dt) {
   if (game.status !== 'playing') return
 
   game.elapsedMs += dt * 1000
-  game.speed = currentSpeed(game.score)
-  game.scrollY += game.speed * dt
-  game.score = Math.floor(game.scrollY)
+  game.scrollY += (game.targetScrollY - game.scrollY) * Math.min(1, SCROLL_EASE_SPEED * dt)
 
   const targetX = laneCenterX(game.lane)
   game.displayX += (targetX - game.displayX) * Math.min(1, LANE_EASE_SPEED * dt)
 
-  while (game.nextPlatformWorldY < game.scrollY + LOGICAL_HEIGHT) {
-    spawnPlatformRow(game)
-  }
-  while (game.nextObstacleWorldY < game.scrollY + LOGICAL_HEIGHT) {
-    spawnObstacle(game)
-  }
-
   for (const p of game.platforms) {
     if (p.type === 'moving') {
-      const shift = Math.sin(game.elapsedMs / 700 + p.worldY) > 0 ? 1 : 0
-      p.startLane = Math.max(0, Math.min(LANE_COUNT - p.laneSpan, p.baseLane + shift))
+      const shift = Math.sin(game.elapsedMs / 700 + p.rowIndex) > 0 ? 1 : 0
+      p.lane = clampLane(p.baseLane + shift)
     }
     if (p.stepped && p.type === 'vanish' && p.vanishAt == null) {
       p.vanishAt = game.elapsedMs + VANISH_DELAY_MS
@@ -149,30 +153,24 @@ export function update(game, dt) {
   for (const o of game.obstacles) {
     if (o.moving) {
       const shift = Math.sin(game.elapsedMs / 600 + o.phase) > 0 ? 1 : 0
-      o.startLane = Math.max(0, Math.min(LANE_COUNT - o.laneSpan, o.baseLane + shift))
+      o.lane = clampLane(o.baseLane + shift)
     }
   }
 
-  game.platforms = game.platforms.filter((p) => p.worldY - game.scrollY > -60)
-  game.obstacles = game.obstacles.filter((o) => o.worldY - game.scrollY > -60)
-
-  for (const p of game.platforms) {
-    if (p.resolved || p.worldY > game.scrollY) continue
-    p.resolved = true
-    const safe = game.lane >= p.startLane && game.lane < p.startLane + p.laneSpan
-    if (safe) {
-      p.stepped = true
-    } else {
-      game.status = 'over'
-      return
-    }
+  game.beatTimer += dt * 1000
+  if (game.beatTimer >= game.beatMs) {
+    game.beatTimer -= game.beatMs
+    advanceRow(game)
+    if (game.status !== 'playing') return
   }
+
+  game.platforms = game.platforms.filter((p) => p.rowIndex >= game.rowIndex - 1)
+  game.obstacles = game.obstacles.filter((o) => o.rowIndex >= game.rowIndex - 1)
 
   for (const o of game.obstacles) {
-    const screenY = toScreenY(game, o.worldY)
+    const screenY = toScreenY(game, o.rowIndex * ROW_HEIGHT)
     if (Math.abs(screenY - ANCHOR_Y) > COLLISION_Y_TOLERANCE) continue
-    const hit = game.lane >= o.startLane && game.lane < o.startLane + o.laneSpan
-    if (hit) {
+    if (game.lane === o.lane) {
       game.status = 'over'
       return
     }
@@ -180,7 +178,7 @@ export function update(game, dt) {
 }
 
 export function render(ctx, game) {
-  const hue = (200 + game.score * 0.15) % 360
+  const hue = (200 + game.score * 0.6) % 360
   const grad = ctx.createLinearGradient(0, 0, 0, LOGICAL_HEIGHT)
   grad.addColorStop(0, `hsl(${hue}, 45%, 14%)`)
   grad.addColorStop(1, `hsl(${(hue + 40) % 360}, 40%, 8%)`)
@@ -198,7 +196,7 @@ export function render(ctx, game) {
   }
 
   for (const p of game.platforms) {
-    const y = toScreenY(game, p.worldY)
+    const y = toScreenY(game, p.rowIndex * ROW_HEIGHT)
     if (y < -20 || y > LOGICAL_HEIGHT + 20) continue
     let alpha = 1
     if (p.type === 'vanish' && p.vanishAt != null) {
@@ -207,15 +205,15 @@ export function render(ctx, game) {
     if (alpha <= 0) continue
     ctx.globalAlpha = alpha
     ctx.fillStyle = p.type === 'moving' ? '#33e6ff' : p.type === 'vanish' ? '#ff2f92' : '#a496c9'
-    ctx.fillRect(p.startLane * LANE_WIDTH + 4, y - 6, p.laneSpan * LANE_WIDTH - 8, 12)
+    ctx.fillRect(p.lane * LANE_WIDTH + 4, y - 6, LANE_WIDTH - 8, 12)
     ctx.globalAlpha = 1
   }
 
   ctx.fillStyle = '#ff3b3b'
   for (const o of game.obstacles) {
-    const y = toScreenY(game, o.worldY)
+    const y = toScreenY(game, o.rowIndex * ROW_HEIGHT)
     if (y < -30 || y > LOGICAL_HEIGHT + 30) continue
-    const cx = o.startLane * LANE_WIDTH + (o.laneSpan * LANE_WIDTH) / 2
+    const cx = laneCenterX(o.lane)
     ctx.beginPath()
     ctx.moveTo(cx - OBSTACLE_DRAW_WIDTH / 2, y + OBSTACLE_HEIGHT / 2)
     ctx.lineTo(cx, y - OBSTACLE_HEIGHT / 2)
