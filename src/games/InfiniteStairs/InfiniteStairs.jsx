@@ -152,7 +152,7 @@ export default function InfiniteStairs() {
 
       <p className="infinite-stairs-help">
         ← → 키 또는 화면 좌/우 터치로 한 걸음씩 올라가세요. 발판이 없는 곳으로 가면 떨어지고, 너무 오래
-        머뭇거리면 아래에서 가시가 올라와 잡힙니다.
+        머뭇거리면 아래에서 물이 차올라 잠깁니다.
       </p>
     </div>
   )
