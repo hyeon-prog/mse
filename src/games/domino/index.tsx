@@ -17,5 +17,4 @@ export const domino: GameModule = {
   icon: "🁻",
   accentVar: "--accent-domino",
   Component: DominoWithBoundary,
-  inProgress: true,
 };

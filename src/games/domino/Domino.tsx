@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DominoLeaderboard } from "./DominoLeaderboard";
 import { DominoLobby } from "./DominoLobby";
 import { DominoLocalGame } from "./DominoLocalGame";
 import { DominoOnlineGame } from "./DominoOnlineGame";
 import { DominoOnlineSetup } from "./DominoOnlineSetup";
-import { ensureSignedIn } from "./multiplayer/firebase";
-import { createRoom, joinRoom, RoomError, startGame, subscribeRoom } from "./multiplayer/room";
-import type { RoomState } from "./multiplayer/types";
+import { hostRoom, joinRoomByCode, type OnlineSession } from "./multiplayer/session";
+import type { LobbySnapshot, PlayerView } from "./multiplayer/protocol";
 import type { MatchMode } from "./engine/types";
 import "./DominoMenu.css";
 
@@ -20,61 +19,80 @@ export function Domino() {
   const [screen, setScreen] = useState<Screen>(() => (initialRoomCodeFromUrl() ? "online-setup" : "home"));
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [nickname, setNickname] = useState("");
-  const [room, setRoom] = useState<RoomState | null>(null);
-  const [myUid, setMyUid] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!roomId) return;
-    return subscribeRoom(roomId, setRoom);
-  }, [roomId]);
+  const [lobby, setLobby] = useState<LobbySnapshot | null>(null);
+  const [view, setView] = useState<PlayerView | null>(null);
+  const sessionRef = useRef<OnlineSession | null>(null);
 
   const goHome = useCallback(() => {
+    sessionRef.current?.close();
+    sessionRef.current = null;
     setScreen("home");
-    setRoomId(null);
-    setRoom(null);
+    setLobby(null);
+    setView(null);
     setErrorMessage(null);
     window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
-  const handleCreateRoom = useCallback(async (nick: string, mode: MatchMode, targetScore: number) => {
-    setBusy(true);
-    setErrorMessage(null);
-    try {
-      const uid = await ensureSignedIn();
-      const newRoomId = await createRoom(nick, mode, targetScore);
-      setMyUid(uid);
-      setNickname(nick);
-      setRoomId(newRoomId);
-      setScreen("online-room");
-    } catch {
-      setErrorMessage("방을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setBusy(false);
-    }
+  useEffect(() => {
+    return () => {
+      sessionRef.current?.close();
+      sessionRef.current = null;
+    };
   }, []);
 
-  const handleJoinRoom = useCallback(async (nick: string, code: string) => {
-    setBusy(true);
-    setErrorMessage(null);
-    try {
-      const uid = await ensureSignedIn();
-      await joinRoom(code, nick);
-      setMyUid(uid);
-      setNickname(nick);
-      setRoomId(code);
-      setScreen("online-room");
-    } catch (error) {
-      if (error instanceof RoomError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("방에 참가하지 못했습니다. 잠시 후 다시 시도해주세요.");
-      }
-    } finally {
-      setBusy(false);
-    }
+  const sessionEvents = useCallback(() => {
+    return {
+      onLobby: (snapshot: LobbySnapshot) => setLobby(snapshot),
+      onView: (playerView: PlayerView) => setView(playerView),
+      onError: (message: string) => {
+        sessionRef.current = null;
+        setLobby(null);
+        setView(null);
+        setErrorMessage(message);
+        setScreen("online-setup");
+      },
+      onClosed: () => {
+        // 호스트가 방을 닫았거나 연결이 끊긴 경우
+        setLobby(null);
+        setView(null);
+        setErrorMessage("방과의 연결이 끊어졌습니다.");
+        setScreen((current) => (current === "online-room" ? "online-setup" : current));
+        sessionRef.current = null;
+      },
+    };
   }, []);
+
+  const handleCreateRoom = useCallback(
+    async (nickname: string, mode: MatchMode, targetScore: number) => {
+      setBusy(true);
+      setErrorMessage(null);
+      try {
+        sessionRef.current = await hostRoom(nickname, mode, targetScore, sessionEvents());
+        setScreen("online-room");
+      } catch {
+        setErrorMessage("방을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [sessionEvents]
+  );
+
+  const handleJoinRoom = useCallback(
+    async (nickname: string, roomCode: string) => {
+      setBusy(true);
+      setErrorMessage(null);
+      try {
+        sessionRef.current = await joinRoomByCode(roomCode, nickname, sessionEvents());
+        setScreen("online-room");
+      } catch {
+        setErrorMessage("방에 참가하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [sessionEvents]
+  );
 
   if (screen === "home") {
     return (
@@ -96,8 +114,12 @@ export function Domino() {
           <button className="domino-menu__start" onClick={() => setScreen("online-setup")}>
             온라인 멀티플레이
           </button>
-          <button className="domino-menu__option" style={{ width: "100%" }} onClick={() => setScreen("leaderboard")}>
-            랭킹 보기
+          <button
+            className="domino-menu__option"
+            style={{ width: "100%" }}
+            onClick={() => setScreen("leaderboard")}
+          >
+            전적 보기
           </button>
         </div>
       </div>
@@ -126,26 +148,46 @@ export function Domino() {
   }
 
   // screen === "online-room"
-  if (!roomId || !room || !myUid) {
-    return <p className="domino-status-bar">연결하는 중...</p>;
+  const session = sessionRef.current;
+  if (!session) {
+    return (
+      <div className="domino-menu">
+        <div className="domino-menu__panel">
+          <p className="domino-menu__subtitle">연결하는 중...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!room.public) {
+  if (view) {
     return (
-      <DominoLobby
-        room={room}
-        roomId={roomId}
-        myUid={myUid}
-        starting={busy}
-        onLeave={goHome}
-        onStart={async () => {
-          setBusy(true);
-          await startGame(roomId);
-          setBusy(false);
-        }}
+      <DominoOnlineGame
+        view={view}
+        myPlayerId={session.myPlayerId}
+        onPlay={(move) => session.play(move)}
+        onNextRound={() => session.nextRound()}
+        onExit={goHome}
       />
     );
   }
 
-  return <DominoOnlineGame room={room} roomId={roomId} myUid={myUid} myNickname={nickname} onExit={goHome} />;
+  if (lobby) {
+    return (
+      <DominoLobby
+        lobby={lobby}
+        myPlayerId={session.myPlayerId}
+        starting={busy}
+        onStart={() => session.start()}
+        onLeave={goHome}
+      />
+    );
+  }
+
+  return (
+    <div className="domino-menu">
+      <div className="domino-menu__panel">
+        <p className="domino-menu__subtitle">연결하는 중...</p>
+      </div>
+    </div>
+  );
 }

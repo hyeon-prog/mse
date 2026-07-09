@@ -1,125 +1,97 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GameShell } from "../../components/GameShell";
+import { useHighScore } from "../../hooks/useHighScore";
 import { DominoTile } from "./DominoTile";
-import { canPlay, getValidMoves } from "./engine/board";
-import type { BoardEnd, Tile } from "./engine/types";
-import {
-  appendOwnHand,
-  removeOwnTile,
-  sendDraw,
-  sendPass,
-  sendPlay,
-  startNextRoundOnline,
-  submitLeaderboardScore,
-  subscribeOwnHand,
-} from "./multiplayer/room";
-import type { RoomState } from "./multiplayer/types";
+import { getValidMoves } from "./engine/board";
+import type { BoardEnd, Move, Tile } from "./engine/types";
+import type { PlayerView } from "./multiplayer/protocol";
+import { addRecord } from "./records";
 import "./Domino.css";
 import "./DominoLobby.css";
 
 interface DominoOnlineGameProps {
-  room: RoomState;
-  roomId: string;
-  myUid: string;
-  myNickname: string;
+  view: PlayerView;
+  myPlayerId: string;
+  onPlay: (move: Move) => void;
+  onNextRound: () => void;
   onExit: () => void;
 }
 
-function playerLabel(room: RoomState, uid: string): string {
-  return room.players[uid]?.nickname ?? "???";
-}
-
-export function DominoOnlineGame({ room, roomId, myUid, myNickname, onExit }: DominoOnlineGameProps) {
-  const [myHand, setMyHand] = useState<Tile[]>([]);
+export function DominoOnlineGame({ view, myPlayerId, onPlay, onNextRound, onExit }: DominoOnlineGameProps) {
   const [pendingTile, setPendingTile] = useState<Tile | null>(null);
-  const [startingNextRound, setStartingNextRound] = useState(false);
-  const pub = room.public;
+  const [highScore, submitScore] = useHighScore("domino");
+  const recordedRef = useRef(false);
 
-  useEffect(() => subscribeOwnHand(roomId, myUid, setMyHand), [roomId, myUid]);
-
-  // 내 턴이고 낼 수 없으면 자동으로 뽑거나 패스한다
-  useEffect(() => {
-    if (!pub || pub.status !== "playing" || pub.currentTurn !== myUid) return;
-    if (canPlay(myHand, pub.board)) return;
-
-    if (pub.boneyard.length > 0) {
-      let hand = myHand;
-      let boneyard = pub.boneyard;
-      const drawn: Tile[] = [];
-      while (!canPlay(hand, pub.board) && boneyard.length > 0) {
-        const tile = boneyard[0];
-        drawn.push(tile);
-        hand = [...hand, tile];
-        boneyard = boneyard.slice(1);
-      }
-      appendOwnHand(roomId, myUid, drawn).then(() => sendDraw(roomId, myUid, drawn));
-    } else {
-      sendPass(roomId, myUid);
-    }
-  }, [pub, myHand, myUid, roomId]);
+  const isHost = view.hostPlayerId === myPlayerId;
+  const isMyTurn = view.status === "playing" && view.currentTurn === myPlayerId;
+  const label = useCallback(
+    (id: string) => (id === myPlayerId ? "나" : (view.nicknames[id] ?? "???")),
+    [view.nicknames, myPlayerId]
+  );
 
   useEffect(() => {
-    if (pub?.status === "match-over" && pub.matchWinnerId === myUid) {
-      submitLeaderboardScore(myUid, myNickname, pub.scores[myUid]);
+    if (view.status === "match-over" && !recordedRef.current) {
+      recordedRef.current = true;
+      const myScore = view.scores[myPlayerId] ?? 0;
+      addRecord({
+        nickname: view.nicknames[myPlayerId] ?? "익명",
+        score: myScore,
+        won: view.matchWinnerId === myPlayerId,
+        date: new Date().toISOString(),
+      });
+      submitScore(myScore);
     }
-  }, [pub?.status, pub?.matchWinnerId, myUid, myNickname, pub?.scores]);
+    if (view.status === "playing") {
+      recordedRef.current = false;
+    }
+  }, [view.status, view.scores, view.nicknames, view.matchWinnerId, myPlayerId, submitScore]);
 
   const handleTileClick = useCallback(
     (tile: Tile) => {
-      if (!pub || pub.status !== "playing" || pub.currentTurn !== myUid) return;
-      const moves = getValidMoves(myHand, pub.board).filter((m) => m.tile.a === tile.a && m.tile.b === tile.b);
+      if (!isMyTurn) return;
+      const moves = getValidMoves(view.yourHand, view.board).filter(
+        (m) => m.tile.a === tile.a && m.tile.b === tile.b
+      );
       if (moves.length === 0) return;
       if (moves.length === 1) {
-        removeOwnTile(roomId, myUid, tile).then(() => sendPlay(roomId, myUid, moves[0]));
+        onPlay(moves[0]);
         return;
       }
       setPendingTile(tile);
     },
-    [pub, myHand, myUid, roomId]
+    [isMyTurn, view.yourHand, view.board, onPlay]
   );
 
   const handleChooseEnd = useCallback(
     (end: BoardEnd) => {
       if (!pendingTile) return;
-      const move = { tile: pendingTile, end };
-      removeOwnTile(roomId, myUid, pendingTile).then(() => sendPlay(roomId, myUid, move));
+      onPlay({ tile: pendingTile, end });
       setPendingTile(null);
     },
-    [pendingTile, roomId, myUid]
+    [pendingTile, onPlay]
   );
 
-  const handleNextRound = useCallback(() => {
-    setStartingNextRound(true);
-    startNextRoundOnline(roomId).finally(() => setStartingNextRound(false));
-  }, [roomId]);
-
-  if (!pub) {
-    return <p className="domino-status-bar">게임을 준비하는 중...</p>;
-  }
-
-  const isMyTurn = pub.status === "playing" && pub.currentTurn === myUid;
   const myValidTileKeys = new Set(
-    isMyTurn ? getValidMoves(myHand, pub.board).map((m) => `${m.tile.a}-${m.tile.b}`) : []
+    isMyTurn ? getValidMoves(view.yourHand, view.board).map((m) => `${m.tile.a}-${m.tile.b}`) : []
   );
-  const opponents = pub.playerOrder.filter((id) => id !== myUid);
-  const isHost = room.hostId === myUid;
+  const opponents = view.playerOrder.filter((id) => id !== myPlayerId);
 
   return (
     <GameShell
       title="도미노 (온라인)"
       accentVar="--accent-domino"
-      score={pub.scores[myUid] ?? 0}
-      highScore={0}
+      score={view.scores[myPlayerId] ?? 0}
+      highScore={highScore}
       controlsHint="손패에서 타일을 클릭해 보드 양 끝에 맞춰 놓으세요"
     >
       <div className="domino-board">
         <div className="domino-status-bar">
-          <span>턴: {playerLabel(room, pub.currentTurn)}</span>
-          <span>보유고 {pub.boneyard.length}장</span>
+          <span>턴: {label(view.currentTurn)}</span>
+          <span>보유고 {view.boneyardCount}장</span>
           <span className="domino-status-bar__scores">
-            {pub.playerOrder.map((id) => (
+            {view.playerOrder.map((id) => (
               <span key={id}>
-                {playerLabel(room, id)} {pub.scores[id]}
+                {label(id)} {view.scores[id]}
               </span>
             ))}
           </span>
@@ -129,11 +101,11 @@ export function DominoOnlineGame({ room, roomId, myUid, myNickname, onExit }: Do
           {opponents.map((id) => (
             <div
               key={id}
-              className={pub.currentTurn === id ? "domino-opponent domino-opponent--active" : "domino-opponent"}
+              className={view.currentTurn === id ? "domino-opponent domino-opponent--active" : "domino-opponent"}
             >
-              <span className="domino-opponent__label">{playerLabel(room, id)}</span>
+              <span className="domino-opponent__label">{label(id)}</span>
               <div className="domino-opponent__hand">
-                {Array.from({ length: pub.handCounts[id] ?? 0 }, (_, i) => (
+                {Array.from({ length: view.handCounts[id] ?? 0 }, (_, i) => (
                   <DominoTile key={i} tile={{ a: 0, b: 0 }} faceDown />
                 ))}
               </div>
@@ -142,8 +114,8 @@ export function DominoOnlineGame({ room, roomId, myUid, myNickname, onExit }: Do
         </div>
 
         <div className="domino-chain">
-          {pub.board.chain.length === 0 && <p className="domino-chain__empty">첫 타일을 놓아보세요</p>}
-          {pub.board.chain.map((placed, i) => (
+          {view.board.chain.length === 0 && <p className="domino-chain__empty">첫 타일을 놓아보세요</p>}
+          {view.board.chain.map((placed, i) => (
             <DominoTile
               key={i}
               tile={placed.tile}
@@ -163,7 +135,7 @@ export function DominoOnlineGame({ room, roomId, myUid, myNickname, onExit }: Do
         )}
 
         <div className="domino-human-hand">
-          {myHand.map((tile, i) => (
+          {view.yourHand.map((tile, i) => (
             <button
               key={i}
               className="domino-human-hand__slot"
@@ -175,25 +147,23 @@ export function DominoOnlineGame({ room, roomId, myUid, myNickname, onExit }: Do
           ))}
         </div>
 
-        {pub.status === "round-over" && pub.lastRoundResult && (
+        {view.status === "round-over" && view.lastRoundResult && (
           <div className="domino-round-end">
             <p>
-              {playerLabel(room, pub.lastRoundResult.winnerId)}가 이번 라운드 승리! (+
-              {pub.lastRoundResult.pointsAwarded}점)
+              {label(view.lastRoundResult.winnerId)}가 이번 라운드 승리! (+
+              {view.lastRoundResult.pointsAwarded}점)
             </p>
             {isHost ? (
-              <button onClick={handleNextRound} disabled={startingNextRound}>
-                {startingNextRound ? "준비하는 중..." : "다음 라운드"}
-              </button>
+              <button onClick={onNextRound}>다음 라운드</button>
             ) : (
-              <p className="domino-lobby__waiting">호스트가 다음 라운드를 준비하는 중...</p>
+              <p className="domino-lobby__waiting">호스트가 다음 라운드를 시작하기를 기다리는 중...</p>
             )}
           </div>
         )}
 
-        {pub.status === "match-over" && (
+        {view.status === "match-over" && (
           <div className="domino-match-end">
-            <p>{playerLabel(room, pub.matchWinnerId ?? myUid)}가 매치에서 승리했습니다!</p>
+            <p>{label(view.matchWinnerId ?? myPlayerId)}가 매치에서 승리했습니다!</p>
             <button onClick={onExit}>메뉴로 돌아가기</button>
           </div>
         )}
