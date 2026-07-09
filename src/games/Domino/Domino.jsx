@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import DominoOnline from './DominoOnline.jsx'
 import DominoTile from './DominoTile.jsx'
@@ -26,6 +26,18 @@ const DIFFICULTY_OPTIONS = [
   { value: 'hard', label: '어려움' },
 ]
 
+function tileKey(tile) {
+  return `${tile.a}-${tile.b}`
+}
+
+function captureRects(refMap) {
+  const rects = new Map()
+  for (const [key, node] of refMap) {
+    if (node) rects.set(key, node.getBoundingClientRect())
+  }
+  return rects
+}
+
 function playerLabel(id) {
   if (id === HUMAN_ID) return '나'
   return `AI ${id.split('-')[1]}`
@@ -48,6 +60,11 @@ export default function Domino() {
   const [saveError, setSaveError] = useState('')
   const [isDrawing, setIsDrawing] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [flight, setFlight] = useState(null)
+  const handRefs = useRef(new Map())
+  const chainRefs = useRef(new Map())
+  const pendingRectRef = useRef(null)
+  const prevHandRectsRef = useRef(new Map())
 
   const startMatch = () => {
     const playerOrder = [HUMAN_ID, ...Array.from({ length: playerCount - 1 }, (_, i) => `ai-${i + 1}`)]
@@ -96,6 +113,62 @@ export default function Domino() {
     return undefined
   }, [match, difficulty])
 
+  // 낸 타일이 손패의 실제 좌표에서 체인의 착지 좌표까지 날아가는 것처럼 보이도록
+  // (FLIP 기법) 착지 후 시작 위치로 즉시 이동시킨 뒤 제자리로 트랜지션시킨다
+  useLayoutEffect(() => {
+    if (!flight) return undefined
+    const node = chainRefs.current.get(flight.key)
+    if (!node || !flight.startRect) {
+      setFlight(null)
+      return undefined
+    }
+    const endRect = node.getBoundingClientRect()
+    const dx = flight.startRect.left - endRect.left
+    const dy = flight.startRect.top - endRect.top
+    node.style.transition = 'none'
+    node.style.transform = `translate(${dx}px, ${dy}px)`
+    node.getBoundingClientRect()
+    const raf = requestAnimationFrame(() => {
+      node.style.transition = 'transform 300ms cubic-bezier(0.22, 0.9, 0.2, 1)'
+      node.style.transform = 'translate(0, 0)'
+    })
+    const timer = setTimeout(() => {
+      node.style.transition = ''
+      node.style.transform = ''
+      setFlight(null)
+    }, 320)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(timer)
+    }
+  }, [flight])
+
+  // 내가 타일을 낸 직후 손패에 남은 타일들이 빈 자리로 부드럽게 붙어오는 것도 같은 방식으로 처리
+  useLayoutEffect(() => {
+    const prev = prevHandRectsRef.current
+    if (prev.size === 0) return
+    prevHandRectsRef.current = new Map()
+    for (const [key, node] of handRefs.current) {
+      const prevRect = prev.get(key)
+      if (!prevRect || !node) continue
+      const newRect = node.getBoundingClientRect()
+      const dx = prevRect.left - newRect.left
+      const dy = prevRect.top - newRect.top
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue
+      node.style.transition = 'none'
+      node.style.transform = `translate(${dx}px, ${dy}px)`
+      node.getBoundingClientRect()
+      requestAnimationFrame(() => {
+        node.style.transition = 'transform 220ms ease-out'
+        node.style.transform = 'translate(0, 0)'
+      })
+      setTimeout(() => {
+        node.style.transition = ''
+        node.style.transform = ''
+      }, 260)
+    }
+  }, [match])
+
   const handleTileClick = useCallback(
     (tile) => {
       if (!match || match.status !== 'playing' || match.currentTurn !== HUMAN_ID) return
@@ -103,10 +176,15 @@ export default function Domino() {
         (m) => m.tile.a === tile.a && m.tile.b === tile.b,
       )
       if (moves.length === 0) return
+      const key = tileKey(tile)
+      const startRect = handRefs.current.get(key)?.getBoundingClientRect() ?? null
       if (moves.length === 1) {
+        prevHandRectsRef.current = captureRects(handRefs.current)
         setMatch(playMove(match, moves[0]))
+        setFlight({ key, startRect })
         return
       }
+      pendingRectRef.current = startRect
       setPendingTile(tile)
     },
     [match],
@@ -114,7 +192,10 @@ export default function Domino() {
 
   const handleChooseEnd = (end) => {
     if (!match || !pendingTile) return
+    const key = tileKey(pendingTile)
+    prevHandRectsRef.current = captureRects(handRefs.current)
     setMatch(playMove(match, { tile: pendingTile, end }))
+    setFlight({ key, startRect: pendingRectRef.current })
     setPendingTile(null)
   }
 
@@ -270,14 +351,25 @@ export default function Domino() {
       <div className="domino-board-wrap">
         <div className="domino-chain">
           {match.board.chain.length === 0 && <p className="domino-chain-empty">첫 타일을 놓아보세요</p>}
-          {match.board.chain.map((placed, i) => (
-            <DominoTile
-              key={i}
-              tile={placed.tile}
-              flipped={placed.flipped}
-              vertical={placed.tile.a === placed.tile.b}
-            />
-          ))}
+          {match.board.chain.map((placed) => {
+            const key = tileKey(placed.tile)
+            return (
+              <div
+                key={key}
+                className="domino-chain-tile"
+                ref={(node) => {
+                  if (node) chainRefs.current.set(key, node)
+                  else chainRefs.current.delete(key)
+                }}
+              >
+                <DominoTile
+                  tile={placed.tile}
+                  flipped={placed.flipped}
+                  vertical={placed.tile.a === placed.tile.b}
+                />
+              </div>
+            )
+          })}
         </div>
 
         {match.status === 'round-over' && match.lastRoundResult && (
@@ -336,16 +428,23 @@ export default function Domino() {
       )}
 
       <div className="domino-hand">
-        {match.hands[HUMAN_ID].map((tile, i) => (
-          <button
-            key={i}
-            className="domino-hand-slot"
-            onClick={() => handleTileClick(tile)}
-            disabled={!isMyTurn || !validTileKeys.has(`${tile.a}-${tile.b}`)}
-          >
-            <DominoTile tile={tile} />
-          </button>
-        ))}
+        {match.hands[HUMAN_ID].map((tile) => {
+          const key = tileKey(tile)
+          return (
+            <button
+              key={key}
+              ref={(node) => {
+                if (node) handRefs.current.set(key, node)
+                else handRefs.current.delete(key)
+              }}
+              className="domino-hand-slot"
+              onClick={() => handleTileClick(tile)}
+              disabled={!isMyTurn || !validTileKeys.has(key)}
+            >
+              <DominoTile tile={tile} />
+            </button>
+          )
+        })}
       </div>
 
       <p className="domino-help">손패에서 타일을 클릭해 보드 양 끝에 맞춰 놓으세요. 낼 수 없으면 자동으로 뽑거나 패스합니다.</p>

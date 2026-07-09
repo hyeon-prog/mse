@@ -136,6 +136,10 @@
   box-shadow: 5px 5px 0 var(--pixel-shadow);
 }
 
+.domino-chain-tile {
+  display: flex;
+}
+
 .domino-chain-empty {
   margin: 0 auto;
   color: rgba(255, 255, 255, 0.75);
@@ -348,14 +352,16 @@
   50% { opacity: 0; }
 }
 
-@keyframes tutorialSlideIn {
-  0% { transform: translateY(46px) scale(0.85); opacity: 0; box-shadow: none; }
-  15% { transform: translateY(46px) scale(0.85); opacity: 0; box-shadow: none; }
-  35% { transform: translateY(0) scale(1.08); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
-  45% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
-  75% { transform: translateY(0) scale(1); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
-  90% { transform: translateY(10px) scale(0.9); opacity: 0; box-shadow: none; }
-  100% { transform: translateY(46px) scale(0.85); opacity: 0; box-shadow: none; }
+@keyframes tutorialHandFlight {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; box-shadow: none; }
+  14% { transform: translate(0, 0) scale(1); opacity: 1; box-shadow: none; }
+  40% { transform: translate(34px, -78px) scale(1.08); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
+  48% { transform: translate(34px, -78px) scale(1); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
+  70% { transform: translate(34px, -78px) scale(1); opacity: 1; box-shadow: 0 0 14px var(--neon-cyan); }
+  78% { transform: translate(34px, -78px) scale(1); opacity: 0; box-shadow: none; }
+  79% { transform: translate(0, 0) scale(1); opacity: 0; box-shadow: none; }
+  94% { transform: translate(0, 0) scale(1); opacity: 0; box-shadow: none; }
+  100% { transform: translate(0, 0) scale(1); opacity: 1; box-shadow: none; }
 }
 
 @keyframes tutorialPhaseShow {
@@ -513,11 +519,41 @@
 
 .domino-tutorial-chain {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 
-.domino-tutorial-incoming-wrap {
-  animation: tutorialSlideIn 3.4s ease-in-out infinite;
+.domino-tutorial-landing-outline {
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  border: 2px dashed var(--border-hairline);
+  border-radius: 2px;
+}
+
+.domino-tutorial-mock-hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.domino-tutorial-mock-hand-row {
+  display: flex;
+  gap: 6px;
+}
+
+.domino-tutorial-ghost-tile {
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+  border: 2px dashed var(--border-hairline);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+.domino-tutorial-flight-tile {
+  animation: tutorialHandFlight 3.2s ease-in-out infinite;
 }
 
 /* 3, 4단계 공용 (두 장면이 같은 자리에서 서로 교차 페이드) */

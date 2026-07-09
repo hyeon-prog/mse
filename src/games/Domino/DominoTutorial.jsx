@@ -25,9 +25,16 @@ function StepVisual({ step }) {
         <div className="domino-tutorial-chain">
           <DominoTile tile={{ a: 3, b: 5 }} />
           <DominoTile tile={{ a: 5, b: 2 }} />
+          <span className="domino-tutorial-landing-outline" />
         </div>
-        <div className="domino-tutorial-incoming-wrap">
-          <DominoTile tile={{ a: 2, b: 6 }} />
+        <div className="domino-tutorial-mock-hand">
+          <span className="domino-tutorial-phase-label">내 손패</span>
+          <div className="domino-tutorial-mock-hand-row">
+            <span className="domino-tutorial-ghost-tile" />
+            <div className="domino-tutorial-flight-tile">
+              <DominoTile tile={{ a: 2, b: 6 }} />
+            </div>
+          </div>
         </div>
       </div>
     )
