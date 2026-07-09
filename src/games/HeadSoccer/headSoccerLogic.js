@@ -279,45 +279,64 @@ export function update(match, dtMs) {
   }
 }
 
+// 초등학생 마스코트 같은 2등신 비율: 머리 지름이 전체 키의 절반을 차지하도록 그린다.
+// 물리 충돌은 여전히 CHAR_RADIUS 원 하나로 처리하므로, 시각적 키는 그 지름(2 * CHAR_RADIUS)에 맞춰
+// head-top이 -CHAR_RADIUS, feet가 +CHAR_RADIUS에 오도록 배치해 헤딩 판정 위치와 그림이 어긋나지 않게 한다.
+const HEAD_R = CHAR_RADIUS * 0.5
+const HEAD_TOP_Y = -CHAR_RADIUS
+const NECK_Y = 0
+const TORSO_BOTTOM_Y = CHAR_RADIUS * 0.65
+const FEET_Y = CHAR_RADIUS
+const HEAD_CENTER_Y = HEAD_TOP_Y + HEAD_R
+
+function strokeOutlined(ctx, outlineWidth, colorWidth, color) {
+  ctx.lineWidth = outlineWidth
+  ctx.strokeStyle = 'rgba(20, 30, 20, 0.4)'
+  ctx.stroke()
+  ctx.lineWidth = colorWidth
+  ctx.strokeStyle = color
+  ctx.stroke()
+}
+
 function drawCharacter(ctx, c, color) {
-  const legSwing = c.onGround && c.moveDir !== 0 ? Math.sin(c.x / 6) * 8 : 0
+  const swing = c.onGround && c.moveDir !== 0 ? Math.sin(c.x / 6) : 0
+  const legSwing = swing * 6
+  const armSwing = swing * 5
 
   ctx.save()
   ctx.translate(c.x, c.y)
-
-  // 다리: 밝은 하늘 배경에서도 잘 보이도록 어두운 아웃라인을 먼저 깔고 팀 컬러를 그 위에 그린다.
   ctx.lineCap = 'round'
+
+  // 다리: 통통하고 짧은 2등신 다리
   ctx.beginPath()
-  ctx.moveTo(-6, CHAR_RADIUS * 0.6)
-  ctx.lineTo(-6 + legSwing, CHAR_RADIUS * 1.15)
-  ctx.moveTo(6, CHAR_RADIUS * 0.6)
-  ctx.lineTo(6 - legSwing, CHAR_RADIUS * 1.15)
-  ctx.lineWidth = 9
-  ctx.strokeStyle = 'rgba(20, 30, 20, 0.4)'
-  ctx.stroke()
-  ctx.lineWidth = 6
-  ctx.strokeStyle = color
-  ctx.stroke()
+  ctx.moveTo(-5, TORSO_BOTTOM_Y)
+  ctx.lineTo(-5 + legSwing, FEET_Y)
+  ctx.moveTo(5, TORSO_BOTTOM_Y)
+  ctx.lineTo(5 - legSwing, FEET_Y)
+  strokeOutlined(ctx, 7, 5, color)
 
   // 킥 다리
   if (c.kickPoseMs > 0) {
     ctx.beginPath()
-    ctx.moveTo(0, CHAR_RADIUS * 0.6)
-    ctx.lineTo(c.facing * CHAR_RADIUS * 1.3, CHAR_RADIUS * 0.75)
-    ctx.lineWidth = 9
-    ctx.strokeStyle = 'rgba(20, 30, 20, 0.4)'
-    ctx.stroke()
-    ctx.lineWidth = 6
-    ctx.strokeStyle = color
-    ctx.stroke()
+    ctx.moveTo(0, TORSO_BOTTOM_Y)
+    ctx.lineTo(c.facing * CHAR_RADIUS * 0.9, TORSO_BOTTOM_Y + 4)
+    strokeOutlined(ctx, 7, 5, color)
   }
 
-  // 몸통
+  // 팔: 옆으로 짧게 뻗은 팔 (요청대로 팔다리가 잘 보이게)
   ctx.beginPath()
-  ctx.moveTo(-CHAR_RADIUS * 0.55, CHAR_RADIUS * 0.7)
-  ctx.lineTo(-CHAR_RADIUS * 0.4, -CHAR_RADIUS * 0.1)
-  ctx.lineTo(CHAR_RADIUS * 0.4, -CHAR_RADIUS * 0.1)
-  ctx.lineTo(CHAR_RADIUS * 0.55, CHAR_RADIUS * 0.7)
+  ctx.moveTo(-CHAR_RADIUS * 0.32, NECK_Y + 3)
+  ctx.lineTo(-CHAR_RADIUS * 0.62, TORSO_BOTTOM_Y - 1 + armSwing)
+  ctx.moveTo(CHAR_RADIUS * 0.32, NECK_Y + 3)
+  ctx.lineTo(CHAR_RADIUS * 0.62, TORSO_BOTTOM_Y - 1 - armSwing)
+  strokeOutlined(ctx, 6, 4, color)
+
+  // 몸통: 머리 절반 크기의 짧은 몸통
+  ctx.beginPath()
+  ctx.moveTo(-CHAR_RADIUS * 0.4, TORSO_BOTTOM_Y)
+  ctx.lineTo(-CHAR_RADIUS * 0.36, NECK_Y)
+  ctx.lineTo(CHAR_RADIUS * 0.36, NECK_Y)
+  ctx.lineTo(CHAR_RADIUS * 0.4, TORSO_BOTTOM_Y)
   ctx.closePath()
   ctx.fillStyle = color
   ctx.fill()
@@ -325,20 +344,20 @@ function drawCharacter(ctx, c, color) {
   ctx.strokeStyle = 'rgba(20, 30, 20, 0.45)'
   ctx.stroke()
 
-  // 머리
+  // 머리: 몸 전체 키의 절반을 차지하는 큰 머리 (2등신)
   ctx.beginPath()
-  ctx.arc(0, -CHAR_RADIUS * 0.35, CHAR_RADIUS, 0, Math.PI * 2)
+  ctx.arc(0, HEAD_CENTER_Y, HEAD_R, 0, Math.PI * 2)
   ctx.fillStyle = '#ffdcb0'
   ctx.fill()
-  ctx.lineWidth = 3
+  ctx.lineWidth = 2.5
   ctx.strokeStyle = color
   ctx.stroke()
 
   // 눈
   ctx.fillStyle = '#241a33'
-  const eyeX = c.facing * CHAR_RADIUS * 0.32
+  const eyeX = c.facing * HEAD_R * 0.45
   ctx.beginPath()
-  ctx.arc(eyeX, -CHAR_RADIUS * 0.4, 3.2, 0, Math.PI * 2)
+  ctx.arc(eyeX, HEAD_CENTER_Y - HEAD_R * 0.1, HEAD_R * 0.22, 0, Math.PI * 2)
   ctx.fill()
 
   ctx.restore()
@@ -429,24 +448,30 @@ function drawFilledText(ctx, text, x, y, fillColor) {
 export function render(ctx, match) {
   ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT)
 
-  // 밝은 한낮 경기장 하늘 (예전의 어두운 밤하늘 그라디언트 대신)
+  // 어두운 나이트 경기장 하늘 + 조명탑 불빛으로, 그냥 캄캄한 배경이 아니라
+  // "야간 축구장"으로 보이게 한다.
   const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y)
-  skyGrad.addColorStop(0, '#5ec6ff')
-  skyGrad.addColorStop(1, '#bfe8ff')
+  skyGrad.addColorStop(0, '#0e0620')
+  skyGrad.addColorStop(1, '#2a1450')
   ctx.fillStyle = skyGrad
   ctx.fillRect(0, 0, FIELD_WIDTH, GROUND_Y)
 
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
-  ;[[50, 34, 20], [220, 24, 16], [380, 40, 18]].forEach(([cx, cy, r]) => {
+  ;[[40, 22], [FIELD_WIDTH / 2, 16], [FIELD_WIDTH - 40, 22]].forEach(([cx, cy]) => {
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30)
+    glow.addColorStop(0, 'rgba(255, 244, 214, 0.55)')
+    glow.addColorStop(1, 'rgba(255, 244, 214, 0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(cx - 30, cy - 30, 60, 60)
+    ctx.fillStyle = '#fff4d6'
     ctx.beginPath()
-    ctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2)
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2)
     ctx.fill()
   })
 
-  // 잔디: 밝은 초록 바탕에 스트라이프를 넣어 어둡던 단색 잔디를 경기장다운 느낌으로 바꾼다.
-  ctx.fillStyle = '#3fae46'
+  // 잔디: 짙은 초록에 스트라이프를 넣어 그냥 어두운 게 아니라 야간 경기장 잔디처럼 보이게 한다.
+  ctx.fillStyle = '#1f4a28'
   ctx.fillRect(0, GROUND_Y, FIELD_WIDTH, FIELD_HEIGHT - GROUND_Y)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.06)'
   const stripeWidth = FIELD_WIDTH / 8
   for (let i = 0; i < 8; i += 2) {
     ctx.fillRect(i * stripeWidth, GROUND_Y, stripeWidth, FIELD_HEIGHT - GROUND_Y)
