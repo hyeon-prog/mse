@@ -21,7 +21,9 @@ export default function Lobby() {
       <div className="lobby-preview">
         {games.map((game) => (
           <Link key={game.id} to={`/games/${game.id}`} className="lobby-card">
-            <span className="lobby-card-icon">{game.icon}</span>
+            <span className="lobby-card-screen">
+              <span className="lobby-card-icon">{game.icon}</span>
+            </span>
             <span className="lobby-card-name">{game.name}</span>
           </Link>
         ))}

@@ -8,7 +8,9 @@ export default function GameList() {
       <div className="game-grid">
         {games.map((game) => (
           <Link key={game.id} to={`/games/${game.id}`} className="game-card">
-            <span className="game-card-icon">{game.icon}</span>
+            <span className="game-card-screen">
+              <span className="game-card-icon">{game.icon}</span>
+            </span>
             <h2>{game.name}</h2>
             <p>{game.description}</p>
           </Link>
