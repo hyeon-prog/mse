@@ -149,6 +149,26 @@ export function resolveDrawPhase(state) {
   return { ...state, hands: { ...state.hands, [player]: hand }, boneyard }
 }
 
+/**
+ * resolveDrawPhase와 달리 한 번에 딱 한 장만 뽑는다.
+ * 화면에서 "한 장씩 천천히 가져가는" 리액션을 보여주기 위한 버전 —
+ * 호출부가 delay를 두고 반복 호출하면 resolveDrawPhase와 같은 결과에 도달한다.
+ * 이미 낼 수 있거나 보유고가 비어 있으면 같은 참조를 그대로 반환한다.
+ */
+export function drawSingleTile(state) {
+  if (state.status !== 'playing') return state
+  const player = state.currentTurn
+  if (canPlay(state.hands[player], state.board)) return state
+  if (state.boneyard.length === 0) return state
+
+  const [tile, ...restBoneyard] = state.boneyard
+  return {
+    ...state,
+    hands: { ...state.hands, [player]: [...state.hands[player], tile] },
+    boneyard: restBoneyard,
+  }
+}
+
 function pipTotal(state, player) {
   return pipSum(state.hands[player])
 }
