@@ -534,6 +534,17 @@
       return ball.position.x > LANE_DIVIDER_X && ball.position.y > FLIPPER_Y
     }
 
+    // 발사 초기 속도에 아주 작은 좌측 편향만 줬을 때는, 공이 레인 디바이더 벽에 눌린 채로
+    // 계속 위로 밀리면서 충돌마다 그 편향이 상쇄되어 사실상 왼쪽으로 못 빠지고 레인 안에서만
+    // 오르락내리락하는 문제가 있었습니다("출발 통로가 막힌" 것처럼 보이는 원인). 그래서 공이
+    // 레인 상단부(디바이더 위쪽 트인 구간)에 있는 동안은 매 스텝마다 왼쪽으로 힘을 계속
+    // 눌러줘서, 벽에 부딫혀 상쇄되더라도 결국은 필드 쪽으로 걸어나가듯 빠져나가게 합니다.
+    function applyLaneGuide(ball) {
+      if (ball.position.y < LANE_BOTTOM_Y && ball.position.x > LANE_DIVIDER_X - 25) {
+        Body.setVelocity(ball, { x: ball.velocity.x - 0.45, y: ball.velocity.y })
+      }
+    }
+
     function clampBallSpeed(ball) {
       var vx = ball.velocity.x
       var vy = ball.velocity.y
@@ -649,6 +660,7 @@
 
     function updateBalls() {
       balls.forEach(function (ball) {
+        applyLaneGuide(ball)
         clampBallSpeed(ball)
       })
       // balls를 완전히 갱신하기 전에 onDrain()을 호출하면 그 안의 balls.length 체크가
