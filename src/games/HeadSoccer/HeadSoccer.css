@@ -37,7 +37,11 @@
 
 .headsoccer-canvas-wrap {
   position: relative;
-  width: min(94vw, 480px);
+  /* 세로 공간이 좁은 화면(가로 모드 폰 등)에서는 캔버스 위쪽 UI(내비/제목/HUD,
+     약 230px)를 뺀 나머지 높이에 맞춰 너비도 함께 줄어들게 뷰포트 높이 기준
+     한도를 추가한다. 그래도 너무 작아지지는 않도록 최소 240px는 보장한다 -
+     안내문 정도는 스크롤해서 보는 것을 감수하고 실제 플레이 영역을 지킨다. */
+  width: max(240px, min(94vw, 480px, calc((100vh - 250px) * (480 / 280))));
   aspect-ratio: 480 / 280;
   border: 4px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
