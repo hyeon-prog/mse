@@ -370,8 +370,15 @@
           { isStatic: true },
         ),
       )
+      // 레인 위쪽을 "벽 사이 틈 + 약간의 좌측 편향 속도"로 필드까지 알아서 흘러가게 하려던 이전
+      // 방식은, 공이 디바이더 벽에 계속 눌리면서 위로 올라가는 동안 왼쪽으로 거의 못 빠지고
+      // 그대로 천장까지 갔다가 다시 레인으로 떨어지는 문제가 있었습니다(발사 게이지를 풀로 채워도
+      // 옆으로 안 넘어가던 원인). 그래서 레인 폭 전체(디바이더~우측 벽)를 가로지르는 램프를 두어,
+      // 레인 안 어디서 올라오든 무조건 이 램프에 부딫혀 필드 쪽으로 강하게 튕겨나가게 만듭니다.
       statics.push(
-        wallFromPoints(LANE_DIVIDER_X + 10, LANE_TOP_GAP_Y - 2, LANE_DIVIDER_X - 56, LANE_TOP_GAP_Y - 48, 9),
+        wallFromPoints(TABLE_WIDTH - WALL, LANE_TOP_GAP_Y + 30, LANE_DIVIDER_X - 90, LANE_TOP_GAP_Y - 60, 16, {
+          restitution: 0.75,
+        }),
       )
 
       statics.push(wallFromPoints(FIELD_LEFT, 66, 66, WALL, 10))
