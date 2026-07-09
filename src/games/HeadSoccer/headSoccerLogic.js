@@ -285,15 +285,18 @@ function drawCharacter(ctx, c, color) {
   ctx.save()
   ctx.translate(c.x, c.y)
 
-  // 다리
-  ctx.strokeStyle = color
-  ctx.lineWidth = 6
+  // 다리: 밝은 하늘 배경에서도 잘 보이도록 어두운 아웃라인을 먼저 깔고 팀 컬러를 그 위에 그린다.
   ctx.lineCap = 'round'
   ctx.beginPath()
   ctx.moveTo(-6, CHAR_RADIUS * 0.6)
   ctx.lineTo(-6 + legSwing, CHAR_RADIUS * 1.15)
   ctx.moveTo(6, CHAR_RADIUS * 0.6)
   ctx.lineTo(6 - legSwing, CHAR_RADIUS * 1.15)
+  ctx.lineWidth = 9
+  ctx.strokeStyle = 'rgba(20, 30, 20, 0.4)'
+  ctx.stroke()
+  ctx.lineWidth = 6
+  ctx.strokeStyle = color
   ctx.stroke()
 
   // 킥 다리
@@ -301,18 +304,26 @@ function drawCharacter(ctx, c, color) {
     ctx.beginPath()
     ctx.moveTo(0, CHAR_RADIUS * 0.6)
     ctx.lineTo(c.facing * CHAR_RADIUS * 1.3, CHAR_RADIUS * 0.75)
+    ctx.lineWidth = 9
+    ctx.strokeStyle = 'rgba(20, 30, 20, 0.4)'
+    ctx.stroke()
+    ctx.lineWidth = 6
+    ctx.strokeStyle = color
     ctx.stroke()
   }
 
   // 몸통
-  ctx.fillStyle = color
   ctx.beginPath()
   ctx.moveTo(-CHAR_RADIUS * 0.55, CHAR_RADIUS * 0.7)
   ctx.lineTo(-CHAR_RADIUS * 0.4, -CHAR_RADIUS * 0.1)
   ctx.lineTo(CHAR_RADIUS * 0.4, -CHAR_RADIUS * 0.1)
   ctx.lineTo(CHAR_RADIUS * 0.55, CHAR_RADIUS * 0.7)
   ctx.closePath()
+  ctx.fillStyle = color
   ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = 'rgba(20, 30, 20, 0.45)'
+  ctx.stroke()
 
   // 머리
   ctx.beginPath()
@@ -353,21 +364,38 @@ function drawBall(ctx, ball) {
   ctx.restore()
 }
 
+// 하늘/잔디 위에서도 항상 잘 보이도록, 밝은 하얀 선 아래에 어두운 그림자 선을 한 번 더 깔아 테두리를 만든다.
+function strokeFieldLine(ctx, lineWidth, drawPathFn) {
+  ctx.save()
+  ctx.lineWidth = lineWidth + 2
+  ctx.strokeStyle = 'rgba(20, 40, 20, 0.35)'
+  drawPathFn()
+  ctx.stroke()
+  ctx.lineWidth = lineWidth
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+  drawPathFn()
+  ctx.stroke()
+  ctx.restore()
+}
+
 function drawGoal(ctx, side) {
   const x = side === 'left' ? 0 : FIELD_WIDTH - GOAL_POST_WIDTH
   const topY = GROUND_Y - GOAL_HEIGHT
 
   // 실제로 공을 튕겨내는 벽은 골 높이보다 위쪽(topY보다 작은 y) 구간이므로, 그 부분을
-  // 막힌 벽처럼 칠하고, 공이 실제로 통과하는 골문 안쪽(topY~GROUND_Y)은 그물만 그립니다.
+  // 하얀 골포스트처럼 칠하고, 공이 실제로 통과하는 골문 안쪽(topY~GROUND_Y)은 그물만 그립니다.
   ctx.save()
-  ctx.fillStyle = 'rgba(243, 236, 255, 0.85)'
+  ctx.fillStyle = '#ffffff'
+  ctx.strokeStyle = '#1a2a1a'
+  ctx.lineWidth = 2
   ctx.fillRect(x, CEILING_Y, GOAL_POST_WIDTH, topY - CEILING_Y)
+  ctx.strokeRect(x, CEILING_Y, GOAL_POST_WIDTH, topY - CEILING_Y)
 
-  ctx.strokeStyle = '#f3ecff'
+  ctx.strokeStyle = '#ffffff'
   ctx.lineWidth = 3
   ctx.strokeRect(x + 1.5, topY, GOAL_POST_WIDTH - 3, GOAL_HEIGHT)
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
   ctx.lineWidth = 1
   const netDepth = 30
   const netX0 = side === 'left' ? GOAL_POST_WIDTH : FIELD_WIDTH - GOAL_POST_WIDTH - netDepth
@@ -388,32 +416,57 @@ function drawGoal(ctx, side) {
   ctx.restore()
 }
 
+function drawFilledText(ctx, text, x, y, fillColor) {
+  ctx.lineJoin = 'round'
+  ctx.miterLimit = 2
+  ctx.lineWidth = 4
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+  ctx.strokeText(text, x, y)
+  ctx.fillStyle = fillColor
+  ctx.fillText(text, x, y)
+}
+
 export function render(ctx, match) {
   ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT)
 
+  // 밝은 한낮 경기장 하늘 (예전의 어두운 밤하늘 그라디언트 대신)
   const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y)
-  skyGrad.addColorStop(0, '#1a0a33')
-  skyGrad.addColorStop(1, '#2a1450')
+  skyGrad.addColorStop(0, '#5ec6ff')
+  skyGrad.addColorStop(1, '#bfe8ff')
   ctx.fillStyle = skyGrad
   ctx.fillRect(0, 0, FIELD_WIDTH, GROUND_Y)
 
-  ctx.fillStyle = '#173a1f'
-  ctx.fillRect(0, GROUND_Y, FIELD_WIDTH, FIELD_HEIGHT - GROUND_Y)
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(0, GROUND_Y)
-  ctx.lineTo(FIELD_WIDTH, GROUND_Y)
-  ctx.stroke()
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+  ;[[50, 34, 20], [220, 24, 16], [380, 40, 18]].forEach(([cx, cy, r]) => {
+    ctx.beginPath()
+    ctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2)
+    ctx.fill()
+  })
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)'
-  ctx.beginPath()
-  ctx.moveTo(FIELD_WIDTH / 2, CEILING_Y)
-  ctx.lineTo(FIELD_WIDTH / 2, GROUND_Y)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(FIELD_WIDTH / 2, GROUND_Y, 34, Math.PI, Math.PI * 2)
-  ctx.stroke()
+  // 잔디: 밝은 초록 바탕에 스트라이프를 넣어 어둡던 단색 잔디를 경기장다운 느낌으로 바꾼다.
+  ctx.fillStyle = '#3fae46'
+  ctx.fillRect(0, GROUND_Y, FIELD_WIDTH, FIELD_HEIGHT - GROUND_Y)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
+  const stripeWidth = FIELD_WIDTH / 8
+  for (let i = 0; i < 8; i += 2) {
+    ctx.fillRect(i * stripeWidth, GROUND_Y, stripeWidth, FIELD_HEIGHT - GROUND_Y)
+  }
+
+  strokeFieldLine(ctx, 2, () => {
+    ctx.beginPath()
+    ctx.moveTo(0, GROUND_Y)
+    ctx.lineTo(FIELD_WIDTH, GROUND_Y)
+  })
+
+  strokeFieldLine(ctx, 2, () => {
+    ctx.beginPath()
+    ctx.moveTo(FIELD_WIDTH / 2, CEILING_Y)
+    ctx.lineTo(FIELD_WIDTH / 2, GROUND_Y)
+  })
+  strokeFieldLine(ctx, 2, () => {
+    ctx.beginPath()
+    ctx.arc(FIELD_WIDTH / 2, GROUND_Y, 34, Math.PI, Math.PI * 2)
+  })
 
   drawGoal(ctx, 'left')
   drawGoal(ctx, 'right')
@@ -424,19 +477,17 @@ export function render(ctx, match) {
 
   if (match.status === 'goal') {
     ctx.save()
-    ctx.fillStyle = '#ffd23d'
     ctx.font = 'bold 22px "Courier New", monospace'
     ctx.textAlign = 'center'
-    ctx.fillText('GOAL!', FIELD_WIDTH / 2, FIELD_HEIGHT / 2)
+    drawFilledText(ctx, 'GOAL!', FIELD_WIDTH / 2, FIELD_HEIGHT / 2, '#ffd23d')
     ctx.restore()
   }
 
   if (match.timeLeftMs <= 0 && match.status === 'playing') {
     ctx.save()
-    ctx.fillStyle = '#ff2f92'
     ctx.font = 'bold 14px "Courier New", monospace'
     ctx.textAlign = 'center'
-    ctx.fillText('연장전! 다음 골이 승부를 가릅니다', FIELD_WIDTH / 2, 34)
+    drawFilledText(ctx, '연장전! 다음 골이 승부를 가릅니다', FIELD_WIDTH / 2, 34, '#ff2f92')
     ctx.restore()
   }
 }
