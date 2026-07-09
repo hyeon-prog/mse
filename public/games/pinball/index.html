@@ -264,11 +264,14 @@
     var FLIPPER_ANGLE = 0.55
     var FLIPPER_ACTIVE_SPEED = 0.5
     var FLIPPER_RETURN_SPEED = 0.28
-    var MAX_BALL_SPEED = 22
-    var MIN_LAUNCH_SPEED = 9
-    var MAX_LAUNCH_SPEED = 21
+    var MAX_BALL_SPEED = 34
+    var MIN_LAUNCH_SPEED = 13
+    var MAX_LAUNCH_SPEED = 30
     var CHARGE_TIME_MS = 1100
-    var FIXED_DT = 1000 / 60
+    // MAX_BALL_SPEED가 MAX_LAUNCH_SPEED와 거의 같았던 탓에 발사 속도가 거의 바로 클램프에
+    // 걸려서 게이지를 채운 만큼 차이가 잘 안 느껴졌습니다. 속도 상한을 크게 올린 만큼, 빨라진
+    // 공이 얇은 벽을 한 스텝에 그냥 통과(터널링)하지 않도록 물리 스텝을 더 촘촘하게 돌립니다.
+    var FIXED_DT = 1000 / 120
     var COMBO_WINDOW_MS = 1300
     var BONUS_DURATION_MS = 12000
     var TARGET_RESET_DELAY_MS = 1600
@@ -615,7 +618,7 @@
           var dx = ball.position.x - other.position.x
           var dy = ball.position.y - other.position.y
           var dist = Math.hypot(dx, dy) || 1
-          var boost = other.kind === 'bumper' ? 7 : 5.5
+          var boost = other.kind === 'bumper' ? 9 : 7
           Body.setVelocity(ball, {
             x: ball.velocity.x + (dx / dist) * boost,
             y: ball.velocity.y + (dy / dist) * boost,
@@ -876,7 +879,7 @@
       accumulator += delta
 
       var steps = 0
-      while (accumulator >= FIXED_DT && steps < 5) {
+      while (accumulator >= FIXED_DT && steps < 10) {
         if (state.phase === 'playing') {
           updateFlippers()
           Engine.update(engine, FIXED_DT)
