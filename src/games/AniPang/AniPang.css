@@ -37,6 +37,7 @@
 .anipang-board {
   position: relative;
   display: grid;
+  grid-template-columns: repeat(8, 36px);
   grid-auto-rows: 36px;
   gap: 2px;
   background: var(--surface-alt);
@@ -124,4 +125,17 @@
   line-height: 1.5;
   max-width: 320px;
   text-align: center;
+}
+
+@media (max-width: 360px) {
+  .anipang-board {
+    grid-template-columns: repeat(8, 30px);
+    grid-auto-rows: 30px;
+  }
+
+  .ap-cell {
+    width: 30px;
+    height: 30px;
+    font-size: 1.1rem;
+  }
 }

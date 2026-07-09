@@ -164,3 +164,24 @@ export function tick(fight, inputs) {
     roundWinner,
   }
 }
+
+export function actionClass(fighter) {
+  if (fighter.action === 'attack') return fighter.attackType === 'kick' ? 'action-kick' : 'action-punch'
+  if (fighter.action === 'block') return 'action-block'
+  if (fighter.action === 'jump') return 'action-jump'
+  if (fighter.action === 'hit') return 'action-hit'
+  return 'action-idle'
+}
+
+export function playActionSfx(sfx, action, attackType) {
+  if (action === 'attack') {
+    if (attackType === 'kick') sfx.kick()
+    else sfx.punch()
+  } else if (action === 'block') {
+    sfx.block()
+  } else if (action === 'jump') {
+    sfx.jump()
+  } else if (action === 'hit') {
+    sfx.hit()
+  }
+}

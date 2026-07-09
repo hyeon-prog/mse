@@ -60,6 +60,12 @@
   text-align: center;
 }
 
+.tekken-arena-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .tekken-arena {
   position: relative;
   height: 260px;
@@ -68,6 +74,35 @@
   border-radius: 0;
   box-shadow: 5px 5px 0 var(--pixel-shadow);
   overflow: hidden;
+  transform-origin: top center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .tekken-arena-wrap {
+    height: 208px;
+  }
+  .tekken-arena {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 480px) {
+  .tekken-arena-wrap {
+    height: 182px;
+  }
+  .tekken-arena {
+    transform: scale(0.7);
+  }
+}
+
+@media (max-width: 380px) {
+  .tekken-arena-wrap {
+    height: 130px;
+  }
+  .tekken-arena {
+    transform: scale(0.5);
+  }
 }
 
 .tekken-fighter {
@@ -245,4 +280,107 @@
   font-size: 0.95rem;
   line-height: 1.6;
   text-align: center;
+}
+
+.tekken-select {
+  align-items: center;
+  gap: 18px;
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.tekken-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.tekken-option-label {
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.tekken-option-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tekken-start-btn {
+  flex-direction: column;
+  width: 100%;
+}
+
+.tekken-target-input {
+  padding: 10px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-retro);
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.tekken-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
+.tekken-lobby-code {
+  letter-spacing: 2px;
+}
+
+.tekken-share-row {
+  width: 100%;
+  align-items: stretch;
+}
+
+.tekken-share-link {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.tekken-you-label {
+  font-family: var(--font-pixel);
+  font-size: 0.65rem;
+  color: var(--accent);
+}
+
+.tekken-result-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tekken-touch-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.tekken-touch-move {
+  display: flex;
+  gap: 10px;
+}
+
+.tekken-touch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tekken-touch-actions .touch-btn {
+  width: 46px;
+  height: 46px;
+  font-size: 0.6rem;
+  font-family: var(--font-pixel);
 }

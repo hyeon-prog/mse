@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import { sfx } from '../../utils/sound.js'
 import {
-  COLS,
   GAME_DURATION,
   createBoard,
   isAdjacent,
@@ -105,10 +104,7 @@ export default function AniPang() {
         <span>⏱ {game.timeLeft}초</span>
       </div>
 
-      <div
-        className="anipang-board"
-        style={{ gridTemplateColumns: `repeat(${COLS}, 36px)` }}
-      >
+      <div className="anipang-board">
         {game.board.map((row, r) =>
           row.map((type, c) => (
             <button

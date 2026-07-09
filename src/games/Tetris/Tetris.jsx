@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import { sfx } from '../../utils/sound.js'
+import { useIsMobile } from '../../utils/useIsMobile.js'
 import {
   COLS,
   ROWS,
@@ -76,6 +77,65 @@ export default function Tetris() {
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const isMobile = useIsMobile()
+  const holdRef = useRef(null)
+
+  const moveLeft = () => {
+    setGame((prev) =>
+      prev.status !== 'playing' || hasCollision(prev.board, prev.piece, 0, -1)
+        ? prev
+        : { ...prev, piece: { ...prev.piece, col: prev.piece.col - 1 } },
+    )
+  }
+
+  const moveRight = () => {
+    setGame((prev) =>
+      prev.status !== 'playing' || hasCollision(prev.board, prev.piece, 0, 1)
+        ? prev
+        : { ...prev, piece: { ...prev.piece, col: prev.piece.col + 1 } },
+    )
+  }
+
+  const softDrop = () => {
+    setGame((prev) => (prev.status !== 'playing' ? prev : tick(prev)))
+  }
+
+  const rotatePiece = () => {
+    setGame((prev) => {
+      if (prev.status !== 'playing') return prev
+      const rotated = rotateMatrix(prev.piece.matrix)
+      for (const offset of [0, -1, 1, -2, 2]) {
+        if (!hasCollision(prev.board, prev.piece, 0, offset, rotated)) {
+          return { ...prev, piece: { ...prev.piece, matrix: rotated, col: prev.piece.col + offset } }
+        }
+      }
+      return prev
+    })
+  }
+
+  const doHardDrop = () => {
+    if (game.status !== 'playing') return
+    sfx.drop()
+    setGame((prev) => hardDrop(prev))
+  }
+
+  const togglePause = () => {
+    setGame((prev) => ({
+      ...prev,
+      status: prev.status === 'playing' ? 'paused' : prev.status === 'paused' ? 'playing' : prev.status,
+    }))
+  }
+
+  const startHold = (action) => {
+    action()
+    clearTimeout(holdRef.current)
+    holdRef.current = setTimeout(function repeat() {
+      action()
+      holdRef.current = setTimeout(repeat, 60)
+    }, 200)
+  }
+
+  const stopHold = () => clearTimeout(holdRef.current)
 
   useEffect(() => {
     if (game.status !== 'playing') return
@@ -102,32 +162,20 @@ export default function Tetris() {
         e.preventDefault()
       }
       if (e.key === 'p' || e.key === 'P') {
-        setGame((prev) => ({
-          ...prev,
-          status: prev.status === 'playing' ? 'paused' : prev.status === 'paused' ? 'playing' : prev.status,
-        }))
+        togglePause()
         return
       }
       if (game.status !== 'playing') return
       if (e.key === 'ArrowLeft') {
-        setGame((prev) => (hasCollision(prev.board, prev.piece, 0, -1) ? prev : { ...prev, piece: { ...prev.piece, col: prev.piece.col - 1 } }))
+        moveLeft()
       } else if (e.key === 'ArrowRight') {
-        setGame((prev) => (hasCollision(prev.board, prev.piece, 0, 1) ? prev : { ...prev, piece: { ...prev.piece, col: prev.piece.col + 1 } }))
+        moveRight()
       } else if (e.key === 'ArrowDown') {
-        setGame((prev) => tick(prev))
+        softDrop()
       } else if (e.key === 'ArrowUp') {
-        setGame((prev) => {
-          const rotated = rotateMatrix(prev.piece.matrix)
-          for (const offset of [0, -1, 1, -2, 2]) {
-            if (!hasCollision(prev.board, prev.piece, 0, offset, rotated)) {
-              return { ...prev, piece: { ...prev.piece, matrix: rotated, col: prev.piece.col + offset } }
-            }
-          }
-          return prev
-        })
+        rotatePiece()
       } else if (e.key === ' ') {
-        sfx.drop()
-        setGame((prev) => hardDrop(prev))
+        doHardDrop()
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -229,13 +277,60 @@ export default function Tetris() {
           <button className="btn btn-secondary" onClick={restart}>
             다시 시작
           </button>
-          <p className="tetris-help">
-            ← → 이동 · ↑ 회전
-            <br />↓ 소프트드롭 · Space 하드드롭
-            <br />P 일시정지
-          </p>
+          {!isMobile && (
+            <p className="tetris-help">
+              ← → 이동 · ↑ 회전
+              <br />↓ 소프트드롭 · Space 하드드롭
+              <br />P 일시정지
+            </p>
+          )}
         </div>
       </div>
+
+      {isMobile && (
+        <div className="tetris-touch-controls">
+          <div className="tetris-touch-dpad">
+            <button
+              className="touch-btn"
+              onPointerDown={() => startHold(moveLeft)}
+              onPointerUp={stopHold}
+              onPointerLeave={stopHold}
+              onPointerCancel={stopHold}
+            >
+              ◀
+            </button>
+            <button
+              className="touch-btn"
+              onPointerDown={() => startHold(moveRight)}
+              onPointerUp={stopHold}
+              onPointerLeave={stopHold}
+              onPointerCancel={stopHold}
+            >
+              ▶
+            </button>
+            <button
+              className="touch-btn"
+              onPointerDown={() => startHold(softDrop)}
+              onPointerUp={stopHold}
+              onPointerLeave={stopHold}
+              onPointerCancel={stopHold}
+            >
+              ▼
+            </button>
+          </div>
+          <div className="tetris-touch-actions">
+            <button className="touch-btn touch-btn-round" onPointerDown={rotatePiece}>
+              ⟳
+            </button>
+            <button className="touch-btn touch-btn-round" onPointerDown={togglePause}>
+              ⏸
+            </button>
+            <button className="touch-btn touch-btn-round touch-btn-accent" onPointerDown={doHardDrop}>
+              ⤓
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

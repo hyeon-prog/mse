@@ -136,3 +136,54 @@
   font-size: 1rem;
   line-height: 1.5;
 }
+
+.tetris-touch-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.tetris-touch-dpad {
+  display: flex;
+  gap: 10px;
+}
+
+.tetris-touch-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .tetris-main {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .tetris-board {
+    grid-template-columns: repeat(10, 24px);
+    grid-template-rows: repeat(20, 24px);
+  }
+
+  .tetris-cell {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tetris-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .tetris-next {
+    order: 2;
+  }
+}
