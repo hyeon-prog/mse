@@ -388,7 +388,7 @@
       // 옆으로 안 넘어가던 원인). 그래서 레인 폭 전체(디바이더~우측 벽)를 가로지르는 램프를 두어,
       // 레인 안 어디서 올라오든 무조건 이 램프에 부딫혀 필드 쪽으로 강하게 튕겨나가게 만듭니다.
       statics.push(
-        wallFromPoints(TABLE_WIDTH - WALL, LANE_TOP_GAP_Y - 90, LANE_DIVIDER_X - 90, LANE_TOP_GAP_Y - 180, 16, {
+        wallFromPoints(TABLE_WIDTH - WALL, LANE_TOP_GAP_Y - 60, LANE_DIVIDER_X - 90, LANE_TOP_GAP_Y - 150, 16, {
           restitution: 0.75,
         }),
       )
