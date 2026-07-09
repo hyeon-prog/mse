@@ -1,0 +1,132 @@
+.omok-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.omok-hud {
+  width: min(94vw, 380px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-retro);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.omok-streak {
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.omok-board-wrap {
+  position: relative;
+  width: min(94vw, 380px);
+}
+
+.omok-board {
+  display: grid;
+  width: 100%;
+  background: #c9974f;
+  border: 4px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  padding: 6px;
+}
+
+.omok-cell {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-right: 1px solid rgba(60, 35, 10, 0.45);
+  border-bottom: 1px solid rgba(60, 35, 10, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.omok-cell:disabled {
+  cursor: default;
+}
+
+.omok-cell:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.omok-star {
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: rgba(60, 35, 10, 0.55);
+}
+
+.omok-stone {
+  width: 82%;
+  height: 82%;
+  border-radius: 50%;
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.omok-stone.black {
+  background: radial-gradient(circle at 35% 30%, #5a5a5a, #0a0a0a 70%);
+}
+
+.omok-stone.white {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #cfc9d8 70%);
+}
+
+.omok-stone.winning {
+  box-shadow: 0 0 0 2px #ffd23d, 1px 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.omok-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.omok-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px 22px;
+  border: 3px solid var(--border-color);
+  box-shadow: 5px 5px 0 var(--pixel-shadow);
+  max-width: 88%;
+}
+
+.omok-result p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.omok-best {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.omok-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.omok-help {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 380px;
+  text-align: center;
+}

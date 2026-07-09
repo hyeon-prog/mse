@@ -9,6 +9,7 @@ import InfiniteStairs from './InfiniteStairs/InfiniteStairs.jsx'
 import WatermelonGame from './WatermelonGame/WatermelonGame.jsx'
 import Pinball from './Pinball/Pinball.jsx'
 import HeadSoccer from './HeadSoccer/HeadSoccer.jsx'
+import Omok from './Omok/Omok.jsx'
 
 export const games = [
   {
@@ -95,6 +96,13 @@ export const games = [
     description: '큰 머리로 헤딩하고 킥으로 공을 차서 상대 골대에 넣으세요. 1인(VS CPU) 또는 2인 동시 플레이.',
     icon: '⚽',
     component: HeadSoccer,
+  },
+  {
+    id: 'omok',
+    name: '오목',
+    description: '15x15 판에서 가로/세로/대각선으로 5개를 먼저 이으면 승리. 1인(VS CPU) 또는 2인 동시 플레이.',
+    icon: '⚫',
+    component: Omok,
   },
 ]
 
