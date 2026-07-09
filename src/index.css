@@ -744,7 +744,7 @@ h3 { font-size: 0.9rem; }
   font-size: 1.15rem;
 }
 
-/* Shared on-screen touch controls (Tetris, Tekken) */
+/* Shared on-screen touch controls (Tetris) */
 .touch-btn {
   width: 52px;
   height: 52px;

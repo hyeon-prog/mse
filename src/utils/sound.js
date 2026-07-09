@@ -95,9 +95,5 @@ export const sfx = {
   win: () => arpeggio([523, 659, 784, 1047], { type: 'square', duration: 0.16, gain: 0.15, step: 0.1 }),
   lose: () => arpeggio([400, 340, 260, 180], { type: 'sawtooth', duration: 0.18, gain: 0.15, step: 0.12 }),
   combo: (level = 1) => play((ctx) => tone(ctx, { freq: 500 + level * 80, type: 'square', duration: 0.1, gain: 0.13 })),
-  punch: () => play((ctx) => noiseBurst(ctx, { duration: 0.07, gain: 0.18 })),
-  kick: () => play((ctx) => noiseBurst(ctx, { duration: 0.12, gain: 0.22 })),
-  block: () => play((ctx) => tone(ctx, { freq: 300, type: 'square', duration: 0.05, gain: 0.1 })),
-  jump: () => play((ctx) => tone(ctx, { freq: 300, endFreq: 600, type: 'sine', duration: 0.12, gain: 0.1 })),
   launch: () => play((ctx) => tone(ctx, { freq: 200, endFreq: 700, type: 'sawtooth', duration: 0.15, gain: 0.15 })),
 }
