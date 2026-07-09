@@ -86,6 +86,7 @@ export default function WatermelonGame() {
   const mergeQueueRef = useRef([])
   const aimXRef = useRef(LOGICAL_WIDTH / 2)
   const lastDropAtRef = useRef(0)
+  const draggingRef = useRef(false)
   const dangerMsRef = useRef(0)
   const bestScoreRef = useRef(0)
   const reportedOverRef = useRef(false)
@@ -338,16 +339,38 @@ export default function WatermelonGame() {
     setPhase('playing')
   }
 
-  const handlePointerMove = (e) => {
-    if (gameRef.current.status !== 'playing') return
+  const updateAim = (e) => {
     const rect = canvasRef.current.getBoundingClientRect()
     const ratio = LOGICAL_WIDTH / rect.width
     const logicalX = (e.clientX - rect.left) * ratio
     aimXRef.current = clampAimX(logicalX, FRUITS[gameRef.current.nextStage].radius)
   }
 
-  const handleDrop = () => {
+  const handlePointerDown = (e) => {
     if (gameRef.current.status !== 'playing') return
+    // 터치 캡처를 걸어서, 손가락이 캔버스 밖으로 살짝 벗어난 채 떼더라도 pointerup이 확실히 이 캔버스로 옵니다.
+    canvasRef.current?.setPointerCapture?.(e.pointerId)
+    draggingRef.current = true
+    updateAim(e)
+  }
+
+  const handlePointerMove = (e) => {
+    // 데스크톱 마우스는 누르지 않고 움직이기만 해도(hover) 조준선이 따라와야 하므로
+    // draggingRef 여부와 관계없이 항상 조준을 갱신합니다. 터치는 손가락을 뗀 상태에서는
+    // 애초에 pointermove 자체가 발생하지 않으므로 별도 분기가 필요 없습니다.
+    if (gameRef.current.status !== 'playing') return
+    updateAim(e)
+  }
+
+  // 터치/클릭을 누르는 순간이 아니라 뗄 때 드롭합니다 - 눌러서 스크롤/조준을 조정하는 동안에는
+  // 과일이 떨어지지 않고, 손을 떼는 순간에만 실제로 떨어집니다.
+  const handlePointerUp = (e) => {
+    const wasDragging = draggingRef.current
+    draggingRef.current = false
+    if (!wasDragging) return
+    if (gameRef.current.status !== 'playing') return
+    updateAim(e)
+
     const matter = matterRef.current
     if (!matter) return
     const now = performance.now()
@@ -361,6 +384,10 @@ export default function WatermelonGame() {
     const nextFruitStage = randomDropStage()
     gameRef.current.nextStage = nextFruitStage
     setNextStage(nextFruitStage)
+  }
+
+  const handlePointerCancel = () => {
+    draggingRef.current = false
   }
 
   return (
@@ -378,8 +405,10 @@ export default function WatermelonGame() {
           <canvas
             ref={canvasRef}
             className="watermelon-canvas"
+            onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
-            onPointerDown={handleDrop}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
           />
 
           {loading && (
