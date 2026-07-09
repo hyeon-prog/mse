@@ -6,8 +6,6 @@ export const LANE_COUNT = 5
 export const LANE_WIDTH = LOGICAL_WIDTH / LANE_COUNT
 export const ROW_HEIGHT = 72
 
-const LANE_EASE_SPEED = 14
-const SCROLL_EASE_SPEED = 10
 const BEAT_MS_START = 650
 const BEAT_MS_MIN = 280
 const BEAT_DECAY_PER_ROW = 3.5
@@ -135,10 +133,8 @@ export function update(game, dt) {
   if (game.status !== 'playing') return
 
   game.elapsedMs += dt * 1000
-  game.scrollY += (game.targetScrollY - game.scrollY) * Math.min(1, SCROLL_EASE_SPEED * dt)
-
-  const targetX = laneCenterX(game.lane)
-  game.displayX += (targetX - game.displayX) * Math.min(1, LANE_EASE_SPEED * dt)
+  game.scrollY = game.targetScrollY
+  game.displayX = laneCenterX(game.lane)
 
   for (const p of game.platforms) {
     if (p.type === 'moving') {
@@ -222,17 +218,11 @@ export function render(ctx, game) {
     ctx.fill()
   }
 
-  const targetX = laneCenterX(game.lane)
-  const tilt = Math.max(-1, Math.min(1, (targetX - game.displayX) / LANE_WIDTH)) * 0.5
   const bob = game.status === 'playing' ? Math.sin(game.elapsedMs / 120) * 2 : 0
-  ctx.save()
-  ctx.translate(game.displayX, ANCHOR_Y)
-  ctx.rotate(tilt)
   ctx.fillStyle = '#ffcf3d'
   ctx.beginPath()
-  ctx.arc(0, bob, CHARACTER_RADIUS, 0, Math.PI * 2)
+  ctx.arc(game.displayX, ANCHOR_Y + bob, CHARACTER_RADIUS, 0, Math.PI * 2)
   ctx.fill()
-  ctx.restore()
 
   ctx.fillStyle = '#f3ecff'
   ctx.font = 'bold 26px "Press Start 2P", monospace'
