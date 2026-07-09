@@ -14,6 +14,22 @@
   100% { transform: scale(1); }
 }
 
+@keyframes apBurst {
+  0% { transform: scale(1); opacity: 1; }
+  40% { transform: scale(1.4) rotate(8deg); opacity: 1; }
+  100% { transform: scale(0.2) rotate(20deg); opacity: 0; }
+}
+
+@keyframes apBurstRing {
+  0% { transform: scale(0.2); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes apSpark {
+  0% { opacity: 1; transform: translate(-50%, -50%) rotate(calc(60deg * var(--i))) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(60deg * var(--i))) translateY(-22px) scale(0.3); }
+}
+
 .anipang {
   display: flex;
   flex-direction: column;
@@ -60,6 +76,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  position: relative;
+  touch-action: none;
+  user-select: none;
 }
 
 .ap-cell:disabled {
@@ -73,6 +92,39 @@
 
 .ap-cell.shaking {
   animation: apShake 0.18s ease;
+}
+
+.ap-cell.popping {
+  animation: apBurst 0.28s ease-out forwards;
+  z-index: 2;
+}
+
+.ap-cell.popping::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 92, 0.9) 0%, rgba(255, 140, 60, 0.4) 45%, transparent 75%);
+  animation: apBurstRing 0.32s ease-out forwards;
+  pointer-events: none;
+}
+
+.ap-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ap-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(calc(45 * var(--i)), 90%, 60%);
+  animation: apSpark 0.38s ease-out forwards;
+  pointer-events: none;
 }
 
 .anipang-overlay {

@@ -1,15 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addScore } from '../../utils/leaderboard.js'
 import { sfx } from '../../utils/sound.js'
 import {
+  COLS,
   GAME_DURATION,
+  ROWS,
+  clearMatches,
+  collapse,
   createBoard,
+  findMatches,
   isAdjacent,
-  resolveCascades,
   swapCells,
   wouldMatch,
 } from './anipangLogic.js'
 import './AniPang.css'
+
+const POP_DURATION = 280
+const SWAP_SETTLE_DELAY = 90
+const DRAG_THRESHOLD = 14
 
 function initGame() {
   return {
@@ -24,9 +32,14 @@ export default function AniPang() {
   const [game, setGame] = useState(initGame)
   const [selected, setSelected] = useState(null)
   const [shaking, setShaking] = useState([])
+  const [popping, setPopping] = useState([])
+  const [animating, setAnimating] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const dragRef = useRef(null)
+  const gameRef = useRef(game)
+  gameRef.current = game
 
   useEffect(() => {
     if (game.status !== 'playing') return
@@ -43,8 +56,40 @@ export default function AniPang() {
     }
   }, [game.timeLeft, game.status])
 
-  const handleCellClick = (r, c) => {
-    if (game.status !== 'playing') return
+  const runCascade = (board, combo) => {
+    const matched = findMatches(board)
+    if (matched.size === 0) {
+      setAnimating(false)
+      return
+    }
+    sfx.combo(combo + 1)
+    setPopping(Array.from(matched))
+    setTimeout(() => {
+      const scoreGain = matched.size * 10 * (combo + 1)
+      const collapsed = collapse(clearMatches(board, matched))
+      setPopping([])
+      setGame((prev) => ({ ...prev, board: collapsed, score: prev.score + scoreGain }))
+      runCascade(collapsed, combo + 1)
+    }, POP_DURATION)
+  }
+
+  const attemptSwap = (r1, c1, r2, c2) => {
+    if (!isAdjacent({ r: r1, c: c1 }, { r: r2, c: c2 })) return
+    const board = gameRef.current.board
+    if (!wouldMatch(board, r1, c1, r2, c2)) {
+      sfx.invalid()
+      setShaking([`${r1}-${c1}`, `${r2}-${c2}`])
+      setTimeout(() => setShaking([]), 220)
+      return
+    }
+    const swapped = swapCells(board, r1, c1, r2, c2)
+    setGame((prev) => ({ ...prev, board: swapped }))
+    setAnimating(true)
+    setTimeout(() => runCascade(swapped, 0), SWAP_SETTLE_DELAY)
+  }
+
+  const handleTap = (r, c) => {
+    if (gameRef.current.status !== 'playing' || animating) return
 
     if (!selected) {
       setSelected({ r, c })
@@ -61,23 +106,47 @@ export default function AniPang() {
       return
     }
 
-    if (wouldMatch(game.board, selected.r, selected.c, r, c)) {
-      const swapped = swapCells(game.board, selected.r, selected.c, r, c)
-      const { board: resolved, score: gained, combo } = resolveCascades(swapped)
-      sfx.combo(combo)
-      setGame((prev) => ({ ...prev, board: resolved, score: prev.score + gained }))
-    } else {
-      sfx.invalid()
-      const keys = [`${selected.r}-${selected.c}`, `${r}-${c}`]
-      setShaking(keys)
-      setTimeout(() => setShaking([]), 220)
-    }
+    attemptSwap(selected.r, selected.c, r, c)
     setSelected(null)
+  }
+
+  const handlePointerDown = (e, r, c) => {
+    if (gameRef.current.status !== 'playing' || animating) return
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    dragRef.current = { r, c, x: e.clientX, y: e.clientY, dragged: false }
+  }
+
+  const handlePointerMove = (e) => {
+    const drag = dragRef.current
+    if (!drag || drag.dragged) return
+    const dx = e.clientX - drag.x
+    const dy = e.clientY - drag.y
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < DRAG_THRESHOLD) return
+
+    let nr = drag.r
+    let nc = drag.c
+    if (Math.abs(dx) > Math.abs(dy)) nc += dx > 0 ? 1 : -1
+    else nr += dy > 0 ? 1 : -1
+
+    drag.dragged = true
+    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return
+    setSelected(null)
+    attemptSwap(drag.r, drag.c, nr, nc)
+  }
+
+  const handlePointerUp = (e, r, c) => {
+    const drag = dragRef.current
+    dragRef.current = null
+    if (!drag || drag.dragged) return
+    handleTap(r, c)
   }
 
   const restart = () => {
     setGame(initGame())
     setSelected(null)
+    setPopping([])
+    setAnimating(false)
     setPlayerName('')
     setSaveError('')
   }
@@ -106,20 +175,34 @@ export default function AniPang() {
 
       <div className="anipang-board">
         {game.board.map((row, r) =>
-          row.map((type, c) => (
-            <button
-              key={`${r}-${c}`}
-              className={
-                'ap-cell' +
-                (selected?.r === r && selected?.c === c ? ' selected' : '') +
-                (shaking.includes(`${r}-${c}`) ? ' shaking' : '')
-              }
-              onClick={() => handleCellClick(r, c)}
-              disabled={game.status !== 'playing'}
-            >
-              {type}
-            </button>
-          )),
+          row.map((type, c) => {
+            const key = `${r}-${c}`
+            const isPopping = popping.includes(key)
+            return (
+              <button
+                key={key}
+                className={
+                  'ap-cell' +
+                  (selected?.r === r && selected?.c === c ? ' selected' : '') +
+                  (shaking.includes(key) ? ' shaking' : '') +
+                  (isPopping ? ' popping' : '')
+                }
+                onPointerDown={(e) => handlePointerDown(e, r, c)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={(e) => handlePointerUp(e, r, c)}
+                disabled={game.status !== 'playing' || animating}
+              >
+                {type}
+                {isPopping && (
+                  <span className="ap-burst">
+                    {Array.from({ length: 6 }, (_, i) => (
+                      <span key={i} className="ap-spark" style={{ '--i': i }} />
+                    ))}
+                  </span>
+                )}
+              </button>
+            )
+          }),
         )}
 
         {game.status === 'over' && (

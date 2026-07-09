@@ -21,6 +21,26 @@
   100% { transform: scale(1); }
 }
 
+@keyframes mineExplode {
+  0% { transform: scale(0.6); background: #fff3b0; }
+  30% { transform: scale(1.5); background: #ff8a3d; }
+  60% { transform: scale(1.1); background: var(--accent); }
+  100% { transform: scale(1); background: var(--accent); }
+}
+
+@keyframes mineShockwave {
+  0% { transform: scale(0.2); opacity: 0.95; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+
+@keyframes boardShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px) translateY(1px); }
+  40% { transform: translateX(3px) translateY(-1px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
 .minesweeper {
   display: flex;
   flex-direction: column;
@@ -96,6 +116,33 @@
 
 .ms-cell.flagged {
   animation: flagPop 0.2s ease-out;
+}
+
+.ms-cell.exploded {
+  position: relative;
+  z-index: 3;
+  animation: mineExplode 0.4s ease-out, boardShake 0.35s ease-in-out;
+}
+
+.ms-cell.exploded::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 210, 120, 0.95) 0%, rgba(255, 90, 30, 0.6) 45%, transparent 75%);
+  animation: mineShockwave 0.45s ease-out forwards;
+  pointer-events: none;
+}
+
+.ms-flagmode-btn {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.ms-flagmode-active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .minesweeper-overlay {

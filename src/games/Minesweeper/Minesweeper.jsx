@@ -20,6 +20,8 @@ export default function Minesweeper() {
   const [status, setStatus] = useState('select') // select | playing | won | lost
   const [seconds, setSeconds] = useState(0)
   const [bestTime, setBestTime] = useState(null)
+  const [flagMode, setFlagMode] = useState(false)
+  const [explodedCell, setExplodedCell] = useState(null)
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function Minesweeper() {
     setStatus('playing')
     setSeconds(0)
     setBestTime(getBestTime(key))
+    setExplodedCell(null)
     clearInterval(timerRef.current)
     timerRef.current = null
   }
@@ -42,6 +45,7 @@ export default function Minesweeper() {
     setStatus('select')
     setBoard(null)
     setDifficulty(null)
+    setExplodedCell(null)
   }
 
   const handleWin = (finalBoard, elapsed) => {
@@ -52,9 +56,10 @@ export default function Minesweeper() {
     setBestTime(saveBestTimeIfBetter(difficulty, elapsed))
   }
 
-  const handleLoss = (finalBoard) => {
+  const handleLoss = (finalBoard, r, c) => {
     clearInterval(timerRef.current)
     sfx.explosion()
+    setExplodedCell({ r, c })
     setBoard(revealAllMines(finalBoard))
     setStatus('lost')
   }
@@ -78,7 +83,7 @@ export default function Minesweeper() {
     if (cell.revealed || cell.flagged) return
 
     if (cell.mine) {
-      handleLoss(board)
+      handleLoss(board, r, c)
       return
     }
 
@@ -88,11 +93,22 @@ export default function Minesweeper() {
     if (checkWin(next)) handleWin(next, seconds)
   }
 
-  const handleFlag = (e, r, c) => {
-    e.preventDefault()
+  const performFlagToggle = (r, c) => {
     if (status !== 'playing' || !board) return
+    if (board[r][c].revealed) return
     sfx.flag()
     setBoard(toggleFlag(board, r, c))
+  }
+
+  const handleFlag = (e, r, c) => {
+    e.preventDefault()
+    performFlagToggle(r, c)
+  }
+
+  const handleCellClick = (r, c) => {
+    if (!board && flagMode) return
+    if (flagMode) performFlagToggle(r, c)
+    else handleReveal(r, c)
   }
 
   if (status === 'select') {
@@ -125,6 +141,13 @@ export default function Minesweeper() {
         </button>
       </div>
 
+      <button
+        className={`btn ms-flagmode-btn ${flagMode ? 'ms-flagmode-active' : 'btn-secondary'}`}
+        onClick={() => setFlagMode((f) => !f)}
+      >
+        🚩 깃발 모드 {flagMode ? 'ON' : 'OFF'}
+      </button>
+
       <div
         className="minesweeper-board"
         style={{ gridTemplateColumns: `repeat(${config.cols}, 28px)` }}
@@ -135,11 +158,12 @@ export default function Minesweeper() {
             const revealed = cell?.revealed
             const flagged = cell?.flagged
             const isMine = cell?.mine
+            const exploded = explodedCell?.r === r && explodedCell?.c === c
             return (
               <button
                 key={`${r}-${c}`}
-                className={`ms-cell ${revealed ? 'revealed' : ''} ${isMine && revealed ? 'mine' : ''} ${!revealed && flagged ? 'flagged' : ''}`}
-                onClick={() => handleReveal(r, c)}
+                className={`ms-cell ${revealed ? 'revealed' : ''} ${isMine && revealed ? 'mine' : ''} ${exploded ? 'exploded' : ''} ${!revealed && flagged ? 'flagged' : ''}`}
+                onClick={() => handleCellClick(r, c)}
                 onContextMenu={(e) => handleFlag(e, r, c)}
                 disabled={status !== 'playing' || revealed}
               >
@@ -188,7 +212,9 @@ export default function Minesweeper() {
         )}
       </div>
 
-      <p className="minesweeper-help">좌클릭으로 칸 열기, 우클릭으로 깃발 표시.</p>
+      <p className="minesweeper-help">
+        좌클릭으로 칸 열기, 우클릭으로 깃발 표시. 모바일에서는 '깃발 모드'를 켠 뒤 탭하면 깃발을 놓을 수 있어요.
+      </p>
     </div>
   )
 }
