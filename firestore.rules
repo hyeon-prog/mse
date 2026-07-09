@@ -3,13 +3,30 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /scores/{scoreId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['gameId', 'name', 'score', 'createdAt'])
+      allow create: if request.resource.data.keys().hasOnly(['gameId', 'name', 'score', 'createdAt', 'university'])
         && request.resource.data.gameId is string
         && request.resource.data.name is string
         && request.resource.data.name.size() <= 12
         && request.resource.data.score is int
         && request.resource.data.score >= 0
         && request.resource.data.score <= 999999
+        && request.resource.data.createdAt == request.time
+        && (!('university' in request.resource.data)
+          || (request.resource.data.university is string
+            && request.resource.data.university.size() > 0
+            && request.resource.data.university.size() <= 50));
+      allow update, delete: if false;
+    }
+
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['name', 'normalizedName', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.normalizedName is string
+        && request.resource.data.normalizedName.size() > 0
+        && request.resource.data.normalizedName.size() <= 50
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
