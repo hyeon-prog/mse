@@ -27,12 +27,11 @@ export default function AngryBirds() {
   const arenaRef = useRef(null)
 
   useEffect(() => {
-    if (state.status !== 'flying') return
     const id = setInterval(() => {
       setState((prev) => tick(prev))
     }, TICK_MS)
     return () => clearInterval(id)
-  }, [state.status])
+  }, [])
 
   const getRelativePoint = (clientX, clientY) => {
     const rect = arenaRef.current.getBoundingClientRect()

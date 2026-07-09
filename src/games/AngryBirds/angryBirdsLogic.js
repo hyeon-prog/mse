@@ -9,6 +9,12 @@ export const LAUNCH_MULTIPLIER = 0.18
 export const GRAVITY = 0.35
 export const TICK_MS = 30
 const HIT_SPEED_RETAIN = 0.6
+const BLOCK_FRICTION = 0.85
+const BLOCK_PUSH_BASE = 3
+const BLOCK_PUSH_SCALE = 0.6
+const BLOCK_PUSH_LIFT = 2
+const BLOCK_HIT_COOLDOWN_TICKS = 6
+const BLOCK_REST_EPSILON = 0.05
 
 export const LEVELS = [
   {
@@ -45,7 +51,81 @@ export const LEVELS = [
       { x: 580, y: GROUND_Y - 50, r: 14 },
     ],
   },
+  {
+    birdCount: 5,
+    blocks: [
+      { x: 400, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 400, y: GROUND_Y - 60, w: 20, h: 40 },
+      { x: 560, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 560, y: GROUND_Y - 60, w: 20, h: 40 },
+    ],
+    pigs: [
+      { x: 400, y: GROUND_Y - 90, r: 14 },
+      { x: 560, y: GROUND_Y - 90, r: 14 },
+      { x: 480, y: GROUND_Y - 14, r: 14 },
+    ],
+  },
+  {
+    birdCount: 6,
+    blocks: [
+      { x: 380, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 380, y: GROUND_Y - 60, w: 20, h: 40 },
+      { x: 380, y: GROUND_Y - 100, w: 20, h: 40 },
+      { x: 480, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 560, y: GROUND_Y - 20, w: 20, h: 40 },
+      { x: 560, y: GROUND_Y - 60, w: 20, h: 40 },
+    ],
+    pigs: [
+      { x: 380, y: GROUND_Y - 130, r: 14 },
+      { x: 480, y: GROUND_Y - 50, r: 14 },
+      { x: 560, y: GROUND_Y - 90, r: 14 },
+      { x: 620, y: GROUND_Y - 14, r: 14 },
+    ],
+  },
 ]
+
+function createBlockState(block) {
+  return { ...block, vx: 0, vy: 0, hit: false, hitCooldown: 0 }
+}
+
+function isBlockSettled(block) {
+  const halfH = block.h / 2
+  const resting = block.y + halfH >= GROUND_Y - 0.5
+  return resting && Math.abs(block.vx) < BLOCK_REST_EPSILON && Math.abs(block.vy) < BLOCK_REST_EPSILON && block.hitCooldown <= 0
+}
+
+export function hasSettlingBlocks(blocks) {
+  return blocks.some((b) => !isBlockSettled(b))
+}
+
+function stepBlock(block) {
+  if (isBlockSettled(block)) return block
+
+  const halfW = block.w / 2
+  const halfH = block.h / 2
+  let vx = block.vx
+  let vy = block.vy + GRAVITY
+  let x = block.x + vx
+  let y = block.y + vy
+
+  if (y + halfH >= GROUND_Y) {
+    y = GROUND_Y - halfH
+    vy = 0
+    vx *= BLOCK_FRICTION
+  }
+  if (x - halfW < 0) {
+    x = halfW
+    vx = 0
+  } else if (x + halfW > ARENA_WIDTH) {
+    x = ARENA_WIDTH - halfW
+    vx = 0
+  }
+
+  if (Math.abs(vx) < BLOCK_REST_EPSILON) vx = 0
+  if (Math.abs(vy) < BLOCK_REST_EPSILON) vy = 0
+
+  return { ...block, x, y, vx, vy, hitCooldown: Math.max(0, block.hitCooldown - 1) }
+}
 
 function circleRectHit(cx, cy, r, rect) {
   return Math.abs(cx - rect.x) <= rect.w / 2 + r && Math.abs(cy - rect.y) <= rect.h / 2 + r
@@ -60,7 +140,7 @@ export function createLevelState(levelIndex, baseScore = 0) {
   return {
     levelIndex,
     birdsLeft: level.birdCount,
-    blocks: level.blocks.map((b) => ({ ...b })),
+    blocks: level.blocks.map(createBlockState),
     pigs: level.pigs.map((p) => ({ ...p })),
     bird: null,
     score: baseScore,
@@ -100,7 +180,15 @@ export function launch(state, vx, vy) {
 }
 
 export function tick(state) {
-  if (state.status !== 'flying' || !state.bird) return state
+  const blocksSettling = hasSettlingBlocks(state.blocks)
+
+  if (state.status !== 'flying' && !blocksSettling) return state
+
+  const blocks = blocksSettling ? state.blocks.map(stepBlock) : state.blocks
+
+  if (state.status !== 'flying' || !state.bird) {
+    return blocksSettling ? { ...state, blocks } : state
+  }
 
   const bird = { ...state.bird }
   bird.x += bird.vx
@@ -120,15 +208,25 @@ export function tick(state) {
     }
   }
 
-  const remainingBlocks = []
-  for (const block of state.blocks) {
-    if (circleRectHit(bird.x, bird.y, BIRD_RADIUS, block)) {
-      score += 20
-      hitSomething = true
-    } else {
-      remainingBlocks.push(block)
+  const nextBlocks = blocks.map((block) => {
+    if (block.hitCooldown > 0 || !circleRectHit(bird.x, bird.y, BIRD_RADIUS, block)) return block
+    hitSomething = true
+    if (!block.hit) score += 20
+
+    const pushDx = block.x - bird.x
+    const pushDy = block.y - bird.y
+    const len = Math.hypot(pushDx, pushDy) || 1
+    const speed = Math.hypot(bird.vx, bird.vy)
+    const impulse = BLOCK_PUSH_BASE + speed * BLOCK_PUSH_SCALE
+
+    return {
+      ...block,
+      vx: block.vx + (pushDx / len) * impulse,
+      vy: block.vy + (pushDy / len) * impulse - BLOCK_PUSH_LIFT,
+      hit: true,
+      hitCooldown: BLOCK_HIT_COOLDOWN_TICKS,
     }
-  }
+  })
 
   if (hitSomething) {
     bird.vx *= HIT_SPEED_RETAIN
@@ -143,7 +241,7 @@ export function tick(state) {
       const isLastLevel = state.levelIndex >= LEVELS.length - 1
       return {
         ...state,
-        blocks: remainingBlocks,
+        blocks: nextBlocks,
         pigs: remainingPigs,
         score,
         bird: null,
@@ -151,10 +249,10 @@ export function tick(state) {
       }
     }
     if (state.birdsLeft <= 0) {
-      return { ...state, blocks: remainingBlocks, pigs: remainingPigs, score, bird: null, status: 'level-failed' }
+      return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'level-failed' }
     }
-    return { ...state, blocks: remainingBlocks, pigs: remainingPigs, score, bird: null, status: 'aiming' }
+    return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird: null, status: 'aiming' }
   }
 
-  return { ...state, blocks: remainingBlocks, pigs: remainingPigs, score, bird }
+  return { ...state, blocks: nextBlocks, pigs: remainingPigs, score, bird }
 }
