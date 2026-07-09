@@ -12,6 +12,7 @@ export default function InfiniteStairs() {
   const rafRef = useRef(null)
   const lastTsRef = useRef(0)
   const bestScoreRef = useRef(0)
+  const reportedOverRef = useRef(false)
 
   const [phase, setPhase] = useState('idle')
   const [finalScore, setFinalScore] = useState(0)
@@ -28,16 +29,19 @@ export default function InfiniteStairs() {
     if (game && ctx) {
       if (game.status === 'playing') {
         update(game, dt)
-        if (game.status === 'over') {
-          sfx.lose()
-          setFinalScore(game.score)
-          if (game.score > bestScoreRef.current) {
-            bestScoreRef.current = game.score
-            localStorage.setItem(BEST_KEY, String(game.score))
-            setBestScore(game.score)
-          }
-          setPhase('over')
+      }
+      // status can also flip to 'over' from moveLane() (called outside this loop, on
+      // keydown/pointerdown), so this check must not be nested inside the block above.
+      if (game.status === 'over' && !reportedOverRef.current) {
+        reportedOverRef.current = true
+        sfx.lose()
+        setFinalScore(game.score)
+        if (game.score > bestScoreRef.current) {
+          bestScoreRef.current = game.score
+          localStorage.setItem(BEST_KEY, String(game.score))
+          setBestScore(game.score)
         }
+        setPhase('over')
       }
       render(ctx, game)
     }
@@ -80,6 +84,7 @@ export default function InfiniteStairs() {
   const startGame = () => {
     gameRef.current = createGame()
     lastTsRef.current = 0
+    reportedOverRef.current = false
     setPlayerName('')
     setSaveError('')
     setPhase('playing')
@@ -146,7 +151,8 @@ export default function InfiniteStairs() {
       </div>
 
       <p className="infinite-stairs-help">
-        ← → 키 또는 화면 좌/우 터치로 이동하세요. 발판이 없는 곳으로 가거나 장애물에 부딫히면 떨어집니다.
+        ← → 키 또는 화면 좌/우 터치로 한 걸음씩 올라가세요. 발판이 없는 곳으로 가면 떨어지고, 너무 오래
+        머뭇거리면 아래에서 가시가 올라와 잡힙니다.
       </p>
     </div>
   )
