@@ -16,6 +16,7 @@ const OBSTACLE_DRAW_WIDTH = LANE_WIDTH * 0.55
 const OBSTACLE_HEIGHT = 26
 const OBSTACLE_BASE_INTERVAL_ROWS = 5
 const COLLISION_Y_TOLERANCE = 22
+const INVINCIBLE_ROWS = 1
 
 function clampLane(lane) {
   return Math.max(0, Math.min(LANE_COUNT - 1, lane))
@@ -124,6 +125,10 @@ function advanceRow(game) {
   if (!row) return
   if (game.lane === row.lane) {
     row.stepped = true
+  } else if (game.rowIndex <= INVINCIBLE_ROWS) {
+    // 시작하고 얼마 안 됐을 때는 봐줍니다 - 안전한 레인으로 슬쩍 옮겨서 계속하게 함
+    game.lane = row.lane
+    row.stepped = true
   } else {
     game.status = 'over'
   }
@@ -162,6 +167,8 @@ export function update(game, dt) {
 
   game.platforms = game.platforms.filter((p) => p.rowIndex >= game.rowIndex - 1)
   game.obstacles = game.obstacles.filter((o) => o.rowIndex >= game.rowIndex - 1)
+
+  if (game.rowIndex <= INVINCIBLE_ROWS) return
 
   for (const o of game.obstacles) {
     const screenY = toScreenY(game, o.rowIndex * ROW_HEIGHT)
