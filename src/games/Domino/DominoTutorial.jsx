@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import DominoTile from './DominoTile.jsx'
+import { createDeck } from './dominoLogic.js'
+
+const FULL_SET = createDeck()
 
 const STEPS = [
   { title: '타일이란', caption: '타일 하나에는 두 개의 숫자(점)가 있어요.' },
+  { title: '타일 구성', caption: `0부터 6까지 숫자로 만들 수 있는 모든 조합, 총 ${FULL_SET.length}장이 있어요.` },
   { title: '놓는 방법', caption: '체인 끝의 숫자와 같은 쪽을 이어붙여요.' },
   { title: '못 낼 때', caption: '낼 수 없으면 뽑고, 보유고도 없으면 패스해요.' },
   {
@@ -24,6 +28,16 @@ function StepVisual({ step }) {
 
   if (step === 1) {
     return (
+      <div className="domino-tutorial-full-set">
+        {FULL_SET.map((tile) => (
+          <DominoTile key={`${tile.a}-${tile.b}`} tile={tile} vertical={tile.a === tile.b} />
+        ))}
+      </div>
+    )
+  }
+
+  if (step === 2) {
+    return (
       <div className="domino-tutorial-step2">
         <div className="domino-tutorial-chain">
           <DominoTile tile={{ a: 3, b: 5 }} />
@@ -43,7 +57,7 @@ function StepVisual({ step }) {
     )
   }
 
-  if (step === 2) {
+  if (step === 3) {
     return (
       <div className="domino-tutorial-stage-inner">
         <div className="domino-tutorial-phase domino-tutorial-phase-draw">
