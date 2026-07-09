@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { addScore } from '../../utils/leaderboard.js'
 import {
   FRUITS,
   MAX_STAGE,
@@ -98,6 +99,9 @@ export default function WatermelonGame() {
   const [score, setScore] = useState(0)
   const [bestScore, setBestScore] = useState(0)
   const [nextStage, setNextStage] = useState(gameRef.current.nextStage)
+  const [playerName, setPlayerName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const spawnEffect = useCallback((x, y, stage, big) => {
     effectsRef.current.push({
@@ -337,6 +341,21 @@ export default function WatermelonGame() {
     setScore(0)
     setNextStage(firstNext)
     setPhase('playing')
+    setPlayerName('')
+    setSaveError('')
+  }
+
+  const handleSaveScore = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await addScore('watermelon-game', playerName, score)
+      startGame()
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateAim = (e) => {
@@ -439,9 +458,22 @@ export default function WatermelonGame() {
                 <h3>게임 오버</h3>
                 <p>최종 점수: {score}</p>
                 <p>최고 점수: {bestScore}</p>
-                <button className="btn btn-primary" onClick={startGame}>
-                  다시하기
-                </button>
+                <input
+                  type="text"
+                  placeholder="이름을 입력하세요"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  maxLength={12}
+                />
+                {saveError && <p className="watermelon-error">{saveError}</p>}
+                <div className="watermelon-result-actions">
+                  <button className="btn btn-primary" onClick={handleSaveScore} disabled={saving}>
+                    {saving ? '저장 중...' : '기록 저장'}
+                  </button>
+                  <button className="btn btn-secondary" onClick={startGame}>
+                    다시하기
+                  </button>
+                </div>
               </div>
             </div>
           )}

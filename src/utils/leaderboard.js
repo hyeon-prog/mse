@@ -31,19 +31,22 @@ function getPeriodStart(period) {
   return null
 }
 
-export function subscribeScores(gameId, period, university, onUpdate, onError) {
+// 랭킹은 학교 구분 없이 전체 공개로 보여주고, 각 기록에 붙은 university 필드로 소속만 표시한다.
+export function subscribeScores(gameId, period, onUpdate, onError, { sortDirection = 'desc' } = {}) {
   const startDate = getPeriodStart(period)
-  const filters = [where('gameId', '==', gameId), where('university', '==', university)]
+  const filters = [where('gameId', '==', gameId)]
   const q = startDate
     ? query(scoresRef, ...filters, where('createdAt', '>=', Timestamp.fromDate(startDate)), orderBy('createdAt', 'desc'), limit(200))
-    : query(scoresRef, ...filters, orderBy('score', 'desc'), limit(10))
+    : query(scoresRef, ...filters, orderBy('score', sortDirection), limit(10))
 
   return onSnapshot(
     q,
     (snapshot) => {
       let scores = snapshot.docs.map((doc) => doc.data())
       if (startDate) {
-        scores = scores.sort((a, b) => b.score - a.score).slice(0, 10)
+        scores = scores
+          .sort((a, b) => (sortDirection === 'asc' ? a.score - b.score : b.score - a.score))
+          .slice(0, 10)
       }
       onUpdate(scores)
     },

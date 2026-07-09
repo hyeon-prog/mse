@@ -119,6 +119,22 @@
   font-size: 0.9rem;
 }
 
+.watermelon-result input {
+  padding: 8px 10px;
+  border-radius: 0;
+  border: 2px solid var(--border-color);
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  background: var(--surface-alt);
+  color: var(--text);
+  width: 100%;
+}
+
+.watermelon-result-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .watermelon-help {
   color: var(--text-muted);
   font-size: 0.9rem;

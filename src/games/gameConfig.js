@@ -37,6 +37,14 @@ export const games = [
     description: '숫자를 단서로 지뢰를 피해 모든 칸을 열어보세요.',
     icon: '💣',
     component: Minesweeper,
+    // 난이도별로 판 크기/지뢰 수가 달라 기록을 서로 비교할 수 없으므로 난이도마다 별도 랭킹으로 분리한다.
+    difficulties: [
+      { id: 'easy', label: '초급' },
+      { id: 'medium', label: '중급' },
+      { id: 'hard', label: '고급' },
+    ],
+    sortDirection: 'asc', // 완료 시간(초)이라 낮을수록 좋은 기록
+    scoreUnit: '초',
   },
   {
     id: 'anipang',

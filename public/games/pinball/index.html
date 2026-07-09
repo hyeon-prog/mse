@@ -311,6 +311,15 @@
 
     var BEST_KEY = 'mse-pinball-best'
 
+    function notifyParent(type, payload) {
+      if (window.parent === window) return
+      try {
+        window.parent.postMessage(Object.assign({ source: 'neon-pinball', type: type }, payload || {}), '*')
+      } catch (e) {
+        // 부모 창과 통신할 수 없어도 게임 자체 플레이에는 영향이 없다.
+      }
+    }
+
     function wallFromPoints(x1, y1, x2, y2, thickness, extra) {
       var cx = (x1 + x2) / 2
       var cy = (y1 + y2) / 2
@@ -923,6 +932,7 @@
       state.phase = 'playing'
       startScreenEl.classList.add('hidden')
       gameOverScreenEl.classList.add('hidden')
+      notifyParent('start')
     }
 
     function gameOver() {
@@ -935,6 +945,7 @@
       finalBestEl.textContent = String(state.best)
       bestEl.textContent = String(state.best)
       gameOverScreenEl.classList.remove('hidden')
+      notifyParent('gameover', { score: state.score, best: state.best })
     }
 
     window.addEventListener('keydown', function (e) {

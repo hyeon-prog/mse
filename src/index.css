@@ -639,6 +639,45 @@ h3 { font-size: 0.9rem; }
   animation: navPop 0.25s ease;
 }
 
+.leaderboard-hint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 4px 0 18px;
+}
+
+.leaderboard-difficulty-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.leaderboard-difficulty-tab {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  transition: transform 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+}
+
+.leaderboard-difficulty-tab:hover {
+  color: var(--text);
+  border-color: var(--neon-pink);
+  transform: translate(-1px, -1px);
+}
+
+.leaderboard-difficulty-tab.active {
+  background: var(--neon-pink);
+  color: var(--bg);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 12px rgba(255, 47, 146, 0.6);
+  animation: navPop 0.25s ease;
+}
+
 .leaderboard-period-tabs {
   display: flex;
   gap: 8px;
@@ -728,8 +767,24 @@ h3 { font-size: 0.9rem; }
   text-shadow: 0 0 8px var(--neon-pink);
 }
 
+.leaderboard-school {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
 .leaderboard-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .leaderboard-score {

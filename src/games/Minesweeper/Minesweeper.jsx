@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { addScore } from '../../utils/leaderboard.js'
 import { getBestTime, saveBestTimeIfBetter } from '../../utils/minesweeperRecords.js'
 import { sfx } from '../../utils/sound.js'
 import {
@@ -22,6 +23,9 @@ export default function Minesweeper() {
   const [bestTime, setBestTime] = useState(null)
   const [flagMode, setFlagMode] = useState(false)
   const [explodedCell, setExplodedCell] = useState(null)
+  const [playerName, setPlayerName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -35,6 +39,8 @@ export default function Minesweeper() {
     setSeconds(0)
     setBestTime(getBestTime(key))
     setExplodedCell(null)
+    setPlayerName('')
+    setSaveError('')
     clearInterval(timerRef.current)
     timerRef.current = null
   }
@@ -111,6 +117,19 @@ export default function Minesweeper() {
     else handleReveal(r, c)
   }
 
+  const handleSaveScore = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await addScore(`minesweeper-${difficulty}`, playerName, seconds)
+      startDifficulty(difficulty)
+    } catch {
+      setSaveError('저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (status === 'select') {
     return (
       <div className="minesweeper minesweeper-select">
@@ -182,8 +201,19 @@ export default function Minesweeper() {
             <div className="minesweeper-result">
               <h3>승리!</h3>
               <p>걸린 시간: {seconds}초</p>
+              <input
+                type="text"
+                placeholder="이름을 입력하세요"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                maxLength={12}
+              />
+              {saveError && <p className="minesweeper-error">{saveError}</p>}
               <div className="minesweeper-result-actions">
-                <button className="btn btn-primary" onClick={() => startDifficulty(difficulty)}>
+                <button className="btn btn-primary" onClick={handleSaveScore} disabled={saving}>
+                  {saving ? '저장 중...' : '기록 저장'}
+                </button>
+                <button className="btn btn-secondary" onClick={() => startDifficulty(difficulty)}>
                   다시하기
                 </button>
                 <button className="btn btn-secondary" onClick={backToSelect}>

@@ -169,9 +169,26 @@
   animation: popIn 0.25s ease both;
 }
 
+.minesweeper-result input {
+  padding: 8px 10px;
+  border-radius: 0;
+  border: 2px solid var(--border-color);
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.minesweeper-error {
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .minesweeper-result-actions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .minesweeper-help {
