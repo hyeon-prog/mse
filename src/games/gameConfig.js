@@ -5,6 +5,7 @@ import Minesweeper from './Minesweeper/Minesweeper.jsx'
 import AniPang from './AniPang/AniPang.jsx'
 import Tekken from './Tekken/Tekken.jsx'
 import AngryBirds from './AngryBirds/AngryBirds.jsx'
+import Domino from './Domino/Domino.jsx'
 
 export const games = [
   {
@@ -55,6 +56,13 @@ export const games = [
     description: '새를 당겨서 날려 돼지를 맞추고 스테이지를 클리어하세요.',
     icon: '🐦',
     component: AngryBirds,
+  },
+  {
+    id: 'domino',
+    name: '도미노',
+    description: '더블식스 도미노 28피스로 AI 2~4인전. 숫자를 이어붙여 손패를 먼저 털어내세요.',
+    icon: '🁻',
+    component: Domino,
   },
 ]
 
