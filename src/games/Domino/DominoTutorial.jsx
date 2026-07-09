@@ -5,7 +5,10 @@ const STEPS = [
   { title: '타일이란', caption: '타일 하나에는 두 개의 숫자(점)가 있어요.' },
   { title: '놓는 방법', caption: '체인 끝의 숫자와 같은 쪽을 이어붙여요.' },
   { title: '못 낼 때', caption: '낼 수 없으면 뽑고, 보유고도 없으면 패스해요.' },
-  { title: '승리 조건', caption: '손패를 먼저 비우면 승리! 상대에게 남은 타일 숫자를 모두 더한 값이 점수가 돼요.' },
+  {
+    title: '승리 조건',
+    caption: '손패를 먼저 비우면 승리! 상대에게 남은 타일과 보유고에 남은 타일 숫자를 모두 더한 값이 점수가 돼요.',
+  },
 ]
 
 function StepVisual({ step }) {
@@ -75,7 +78,7 @@ function StepVisual({ step }) {
         <span className="domino-tutorial-domino-text">도미노!</span>
       </div>
       <div className="domino-tutorial-phase domino-tutorial-phase-score">
-        <span className="domino-tutorial-phase-label">상대에게 남은 타일</span>
+        <span className="domino-tutorial-phase-label">상대 손패 + 보유고</span>
         <div className="domino-tutorial-loser-hand">
           <div className="domino-tutorial-loser-tile">
             <DominoTile tile={{ a: 4, b: 1 }} />
@@ -86,8 +89,13 @@ function StepVisual({ step }) {
             <DominoTile tile={{ a: 0, b: 3 }} />
             <span className="domino-tutorial-tile-sum">3</span>
           </div>
+          <span className="domino-tutorial-plus">+</span>
+          <div className="domino-tutorial-loser-tile">
+            <DominoTile tile={{ a: 2, b: 2 }} />
+            <span className="domino-tutorial-tile-sum">4</span>
+          </div>
         </div>
-        <span className="domino-tutorial-score-badge">= 8점 획득!</span>
+        <span className="domino-tutorial-score-badge">= 12점 획득!</span>
       </div>
     </div>
   )
