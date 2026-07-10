@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <NavLink to="/" className="navbar-brand" end>
-        🎮 미니게임 플랫폼
+        🎮 AltTab
       </NavLink>
       <nav className="navbar-links">
         {links.map((link) => (
