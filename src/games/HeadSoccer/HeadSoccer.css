@@ -54,13 +54,13 @@
   height: 100%;
 }
 
+/* 게임 시작 전/후 안내 패널은 캔버스 박스가 화면비 때문에 아주 작게 줄어들 때도
+   (가로모드 폰 등) 잘리지 않도록, 캔버스 안이 아니라 뷰포트 전체를 기준으로 뜨는
+   모달로 띄운다. 캔버스 크기와 무관하게 항상 화면 전체를 활용할 수 있다. */
 .headsoccer-overlay {
-  /* 캔버스 박스가 480:280 비율이라 세로 공간이 좁아, 안내문(설명+조작법+버튼)이
-     그 안에 다 안 들어가고 잘리는 문제가 있었다. 오버레이를 뷰포트 기준
-     전체화면 모달로 띄워서 안내판이 캔버스 높이에 갇히지 않게 한다. */
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,7 +80,7 @@
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
   max-width: min(90vw, 420px);
-  max-height: 90vh;
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
 }
 

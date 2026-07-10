@@ -233,7 +233,14 @@ h3 { font-size: 0.9rem; }
 }
 
 .lobby, .game-list, .leaderboard, .game-page {
-  animation: fadeInUp 0.35s ease both;
+  /* fill-mode 없음(기본값 none) - "both"/"forwards"였다면 애니메이션이 끝난 뒤에도
+     transform: translateY(0)이 계속 적용된 채로 남는데, 값이 0이라 눈에는 안 보여도
+     이 요소를 새 containing block으로 만들어버려서 그 안의 position:fixed 자식들이
+     실제 뷰포트가 아니라 이 요소 기준으로 배치되는 버그가 생긴다(예: 헤드사커 시작
+     안내 패널이 캔버스 박스 크기에 맞춰 잘리던 문제). 지연 없이 바로 재생되는
+     애니메이션이라 fill-mode가 없어도 시작 프레임이 그대로 보이는 데는 문제없다.
+  */
+  animation: fadeInUp 0.35s ease;
 }
 
 .btn {
@@ -731,7 +738,11 @@ h3 { font-size: 0.9rem; }
   border: 1px solid var(--border-hairline);
   border-radius: 4px;
   font-size: 1.2rem;
-  animation: fadeInUp 0.3s ease both;
+  /* backwards만 사용 - 각 행의 animation-delay 동안은 시작 프레임을 유지해야 하니
+     완전히 fill-mode를 없앨 수는 없지만, "both"의 forwards 쪽(애니메이션이 끝난 뒤에도
+     transform이 계속 적용되는 것)은 필요 없고 새 containing block을 만드는 부작용만
+     남기므로 뺀다. */
+  animation: fadeInUp 0.3s ease backwards;
 }
 
 .leaderboard-list .leaderboard-row:nth-child(1) { animation-delay: 0.03s; }
