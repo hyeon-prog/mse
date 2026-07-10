@@ -15,7 +15,7 @@ import {
 } from './anipangLogic.js'
 import './AniPang.css'
 
-const POP_DURATION = 280
+const POP_DURATION = 400
 const SLIDE_DURATION = 160
 const FALL_DURATION = 260
 const DRAG_THRESHOLD = 14
@@ -230,12 +230,12 @@ export default function AniPang() {
                 onPointerDown={(e) => handlePointerDown(e, r, c)}
                 onPointerMove={handlePointerMove}
                 onPointerUp={(e) => handlePointerUp(e, r, c)}
-                disabled={game.status !== 'playing' || animating}
+                disabled={game.status !== 'playing'}
               >
                 {type}
                 {isPopping && (
                   <span className="ap-burst">
-                    {Array.from({ length: 6 }, (_, i) => (
+                    {Array.from({ length: 8 }, (_, i) => (
                       <span key={i} className="ap-spark" style={{ '--i': i }} />
                     ))}
                   </span>

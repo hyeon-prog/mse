@@ -55,11 +55,16 @@
 }
 
 .headsoccer-overlay {
-  position: absolute;
+  /* 캔버스 박스가 480:280 비율이라 세로 공간이 좁아, 안내문(설명+조작법+버튼)이
+     그 안에 다 안 들어가고 잘리는 문제가 있었다. 오버레이를 뷰포트 기준
+     전체화면 모달로 띄워서 안내판이 캔버스 높이에 갇히지 않게 한다. */
+  position: fixed;
   inset: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   background: rgba(0, 0, 0, 0.72);
   text-align: center;
 }
@@ -74,7 +79,9 @@
   padding: 20px 22px;
   border: 3px solid var(--border-color);
   box-shadow: 5px 5px 0 var(--pixel-shadow);
-  max-width: 88%;
+  max-width: min(90vw, 420px);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .headsoccer-result p {

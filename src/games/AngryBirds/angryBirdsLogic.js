@@ -86,7 +86,8 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 3,
+    // 스테이지 1~10은 새를 돼지 수보다 1마리 더 준다 (marginForStage와 맞춤).
+    birdCount: 4,
     blocks: [
       { x: 420, y: GROUND_Y - 20, w: 20, h: 40, material: 'wood' },
       { x: 500, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
@@ -100,7 +101,7 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 3,
+    birdCount: 4,
     blocks: [
       { x: 400, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
       { x: 400, y: GROUND_Y - 60, w: 20, h: 40, material: 'glass' },
@@ -114,7 +115,6 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    // 5번째(스테이지 5)부터는 새를 돼지 수보다 딱 1마리만 더 줘서 여유를 거의 없앤다.
     birdCount: 5,
     blocks: [
       { x: 380, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
@@ -148,13 +148,24 @@ function pickMaterial(tier) {
   return 'wood'
 }
 
+/**
+ * 새-돼지 여유(margin)를 스테이지 구간마다 계단식으로 줄여 난이도를 계속 올린다:
+ * 1~10은 +1, 11~15는 0, 16~20은 -1, 21~25는 -2, 그 다음부터는 5스테이지마다 -1씩 더 줄어든다.
+ */
+function marginForStage(stage) {
+  if (stage <= 10) return 1
+  if (stage <= 15) return 0
+  const block = Math.floor((stage - 16) / 5)
+  return -1 - block
+}
+
 function generateLevel(levelIndex) {
+  const stage = levelIndex + 1
   const tier = levelIndex - HANDCRAFTED_LEVELS.length + 1
   const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
   const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
   const pigCount = Math.min(4 + tier, 10)
-  // 스테이지 5 이후는 계속 여유 없이 어려워야 하므로, 돼지 수보다 딱 1마리만 더 준다.
-  const birdCount = pigCount + 1
+  const birdCount = Math.max(1, pigCount + marginForStage(stage))
 
   const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
   const towerXs = Array.from({ length: towerCount }, (_, t) =>
