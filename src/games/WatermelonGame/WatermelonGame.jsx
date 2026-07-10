@@ -127,6 +127,8 @@ export default function WatermelonGame() {
 
         if (bodyA.fruitStage >= MAX_STAGE) {
           gameRef.current.score += MERGE_BONUS_SCORE
+          const merged = createFruitBody(Matter, midX, midY, MAX_STAGE)
+          Matter.World.add(world, merged)
           spawnEffect(midX, midY, MAX_STAGE, true)
         } else {
           const nextFruitStage = bodyA.fruitStage + 1
