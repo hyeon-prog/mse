@@ -3,6 +3,7 @@ import { db } from '../firebase.js'
 import { canonicalizeUniversityName } from './universityCanonical.js'
 
 const STORAGE_KEY = 'mse-university'
+const VERIFIED_KEY = 'mse-university-verified'
 const roomsRef = collection(db, 'rooms')
 
 export function normalize(name) {
@@ -13,12 +14,23 @@ export function getSelectedUniversity() {
   return localStorage.getItem(STORAGE_KEY) || null
 }
 
-export function setSelectedUniversity(name) {
+/** verified=true는 학교 이메일 인증(emailVerification.js)을 통해 자동 배정된 경우에만 표시한다. */
+export function setSelectedUniversity(name, verified = false) {
   localStorage.setItem(STORAGE_KEY, name)
+  if (verified) {
+    localStorage.setItem(VERIFIED_KEY, '1')
+  } else {
+    localStorage.removeItem(VERIFIED_KEY)
+  }
+}
+
+export function isSelectedUniversityVerified() {
+  return localStorage.getItem(VERIFIED_KEY) === '1'
 }
 
 export function leaveUniversity() {
   localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(VERIFIED_KEY)
 }
 
 export async function searchRooms(prefixText) {

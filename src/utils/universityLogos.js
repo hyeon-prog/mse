@@ -94,3 +94,27 @@ export function getUniversityDomain(name) {
 export function hasKnownLogo(name) {
   return getUniversityDomain(name) !== null
 }
+
+// 이메일 인증(emailVerification.js)에서 "학교 이메일 도메인 → 학교 이름"으로
+// 거꾸로 찾을 때 쓴다. 위 표는 학교 하나에 정식 명칭/약칭 등 여러 키가 같은
+// 도메인을 가리키므로, 도메인마다 가장 긴(=가장 정식에 가까운) 이름을 고른다.
+let domainToNameCache = null
+
+function buildDomainToNameMap() {
+  const map = {}
+  for (const [name, domain] of Object.entries(SEOUL_UNIVERSITY_DOMAINS)) {
+    const current = map[domain]
+    if (!current || name.length > current.length) {
+      map[domain] = name
+    }
+  }
+  return map
+}
+
+/** 이메일 도메인이 등록된 학교 도메인과 일치하면 그 학교의 정식 명칭을, 아니면 null을 돌려준다. */
+export function resolveUniversityByEmailDomain(email) {
+  const domain = email?.trim().toLowerCase().split('@')[1]
+  if (!domain) return null
+  domainToNameCache ??= buildDomainToNameMap()
+  return domainToNameCache[domain] ?? null
+}

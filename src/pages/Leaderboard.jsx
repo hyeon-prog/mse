@@ -3,7 +3,7 @@ import { games } from '../games/gameConfig.js'
 import RoomSelector from '../components/RoomSelector.jsx'
 import UniversityLogo from '../components/UniversityLogo.jsx'
 import { subscribeScores } from '../utils/leaderboard.js'
-import { getSelectedUniversity, leaveUniversity, setSelectedUniversity } from '../utils/university.js'
+import { getSelectedUniversity, isSelectedUniversityVerified, leaveUniversity, setSelectedUniversity } from '../utils/university.js'
 
 const PERIOD_TABS = [
   { id: 'daily', label: '일간' },
@@ -21,6 +21,7 @@ const DISPLAY_LIMIT = 7
 
 export default function Leaderboard() {
   const [university, setUniversity] = useState(getSelectedUniversity)
+  const [verified, setVerified] = useState(isSelectedUniversityVerified)
   const [showRoomSelector, setShowRoomSelector] = useState(false)
   const [activeGameId, setActiveGameId] = useState(games[0]?.id)
   const [activeDifficulty, setActiveDifficulty] = useState(games[0]?.difficulties?.[0]?.id ?? null)
@@ -58,14 +59,18 @@ export default function Leaderboard() {
   }, [leaderboardGameId, activePeriod, activeGame])
 
   const handleJoin = (name) => {
-    setSelectedUniversity(name)
+    // 이 페이지의 수동 설정 흐름은 이메일 인증이 아니므로 항상 미인증으로 남는다 -
+    // 인증은 시작 페이지(Lobby)의 학교 이메일 인증에서만 이뤄진다.
+    setSelectedUniversity(name, false)
     setUniversity(name)
+    setVerified(false)
     setShowRoomSelector(false)
   }
 
   const handleLeave = () => {
     leaveUniversity()
     setUniversity(null)
+    setVerified(false)
   }
 
   const handleSelectScope = (nextScope) => {
@@ -87,6 +92,9 @@ export default function Leaderboard() {
         {university ? (
           <div className="leaderboard-room-badge">
             <UniversityLogo name={university} size={22} /> {university}
+            <span className={'lobby-verify-badge' + (verified ? ' verified' : '')}>
+              {verified ? '✓ 인증됨' : '테스트(미인증)'}
+            </span>
             <button className="leaderboard-room-leave" onClick={handleLeave}>
               학교 변경
             </button>
@@ -171,7 +179,10 @@ export default function Leaderboard() {
               <span className="leaderboard-school">
                 {entry.university ? (
                   <>
-                    <UniversityLogo name={entry.university} size={16} /> {entry.university}
+                    <span className="leaderboard-school-name">
+                      <UniversityLogo name={entry.university} size={16} /> {entry.university}
+                    </span>
+                    {!entry.verified && <span className="leaderboard-unverified-tag">테스트</span>}
                   </>
                 ) : (
                   '학교 미설정'

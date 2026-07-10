@@ -10,7 +10,7 @@ import {
   where,
 } from 'firebase/firestore'
 import { db } from '../firebase.js'
-import { getSelectedUniversity } from './university.js'
+import { getSelectedUniversity, isSelectedUniversityVerified } from './university.js'
 
 const scoresRef = collection(db, 'scores')
 
@@ -67,6 +67,6 @@ export async function addScore(gameId, name, score) {
     name: (name || '익명').slice(0, 12),
     score,
     createdAt: serverTimestamp(),
-    ...(university ? { university } : {}),
+    ...(university ? { university, verified: isSelectedUniversityVerified() } : {}),
   })
 }
