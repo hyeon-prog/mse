@@ -394,11 +394,15 @@
       )
 
       statics.push(wallFromPoints(FIELD_LEFT, 66, 66, WALL, 10))
-      statics.push(wallFromPoints(FIELD_LEFT + 4, LANE_BOTTOM_Y, 85, LANE_BOTTOM_Y, 10))
+      // 에이프런을 완전히 수평으로 두면 바깥쪽 벽과 만나는 구석에 공이 그대로 멈춰서(굴러갈
+      // 경사가 없어 튕기지도, 빠지지도 않음) 게임이 안 끝나는 자리가 생깁니다. 바깥쪽(벽 쪽)은
+      // 높고 안쪽(플리퍼 쪽)은 낮게 경사를 줘서, 그 구석에 멈추더라도 중력으로 저절로 굴러
+      // 내려가게 만듭니다.
+      statics.push(wallFromPoints(FIELD_LEFT + 4, LANE_BOTTOM_Y - 20, 85, LANE_BOTTOM_Y + 16, 10))
       // 오른쪽 플리퍼는 피벗(x=259)에서 왼쪽으로만 뻗어있어서, 피벗 오른쪽은 원래 플리퍼가
       // 전혀 덮지 못하는 영역입니다. 에이프런을 피벗 근처(255)부터 시작해야 그 사이로
       // 공이 아무 반응 없이 그냥 빠져나가는 구멍이 생기지 않습니다.
-      statics.push(wallFromPoints(255, LANE_BOTTOM_Y, LANE_DIVIDER_X, LANE_BOTTOM_Y, 10))
+      statics.push(wallFromPoints(LANE_DIVIDER_X, LANE_BOTTOM_Y - 20, 255, LANE_BOTTOM_Y + 16, 10))
 
       var leftPivot = { x: 95, y: FLIPPER_Y }
       var rightPivot = { x: 259, y: FLIPPER_Y }
