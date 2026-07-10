@@ -64,6 +64,46 @@
   opacity: 0.5;
 }
 
+.omok-cell.forbidden {
+  cursor: not-allowed;
+}
+
+.omok-forbidden-mark {
+  position: absolute;
+  inset: 22%;
+}
+
+.omok-forbidden-mark::before,
+.omok-forbidden-mark::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.65;
+}
+
+.omok-forbidden-mark::before {
+  transform: rotate(45deg);
+}
+
+.omok-forbidden-mark::after {
+  transform: rotate(-45deg);
+}
+
+.omok-forbidden-notice {
+  width: min(94vw, 380px);
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--accent);
+  background: var(--surface-alt);
+  border: 2px solid var(--border-color);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .omok-stone {
   width: 82%;
   height: 82%;

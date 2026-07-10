@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   BLACK,
   BOARD_SIZE,
@@ -8,10 +8,18 @@ import {
   checkWin,
   cloneBoardWithMove,
   createEmptyBoard,
+  forbiddenReason,
   isBoardFull,
+  isForbiddenMove,
   pickAiMove,
 } from './omokLogic.js'
 import './Omok.css'
+
+const FORBIDDEN_LABEL = {
+  overline: '장목(6개 이상)',
+  'double-four': '사사(44)',
+  'double-three': '삼삼(33)',
+}
 
 const STREAK_KEY = 'mse-omok-streak'
 const AI_THINK_MS = 450
@@ -28,6 +36,7 @@ export default function Omok() {
   const [winLine, setWinLine] = useState([])
   const [aiThinking, setAiThinking] = useState(false)
   const [streak, setStreak] = useState(0)
+  const [forbiddenNotice, setForbiddenNotice] = useState(null)
   const streakRef = useRef(0)
 
   useEffect(() => {
@@ -44,6 +53,7 @@ export default function Omok() {
   }
 
   const applyMove = (row, col, player) => {
+    setForbiddenNotice(null)
     const nextBoard = cloneBoardWithMove(board, row, col, player)
     setBoard(nextBoard)
 
@@ -82,8 +92,29 @@ export default function Omok() {
     if (phase !== 'playing' || aiThinking) return
     if (board[r][c] !== EMPTY) return
     if (mode === '1p' && currentPlayer !== BLACK) return
+
+    if (currentPlayer === BLACK && !checkWin(board, r, c, BLACK).win && isForbiddenMove(board, r, c, BLACK)) {
+      setForbiddenNotice(forbiddenReason(board, r, c, BLACK))
+      return
+    }
+
+    setForbiddenNotice(null)
     applyMove(r, c, currentPlayer)
   }
+
+  // 흑 차례일 때만 계산 — 백은 금수 규칙이 없어서 표시할 필요가 없다
+  const forbiddenCells = useMemo(() => {
+    if (phase !== 'playing' || currentPlayer !== BLACK) return null
+    const set = new Set()
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        if (board[r][c] !== EMPTY) continue
+        if (checkWin(board, r, c, BLACK).win) continue // 이기는 수는 금수여도 항상 허용
+        if (isForbiddenMove(board, r, c, BLACK)) set.add(`${r}-${c}`)
+      }
+    }
+    return set
+  }, [board, currentPlayer, phase])
 
   const startGame = (nextMode) => {
     setMode(nextMode)
@@ -92,6 +123,7 @@ export default function Omok() {
     setWinner(null)
     setWinLine([])
     setAiThinking(false)
+    setForbiddenNotice(null)
     setPhase('playing')
   }
 
@@ -130,30 +162,35 @@ export default function Omok() {
           style={{ gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)` }}
         >
           {board.map((row, r) =>
-            row.map((cell, c) => (
-              <button
-                key={`${r}-${c}`}
-                className="omok-cell"
-                onClick={() => handleCellClick(r, c)}
-                disabled={
-                  phase !== 'playing' ||
-                  cell !== EMPTY ||
-                  aiThinking ||
-                  (mode === '1p' && currentPlayer !== BLACK)
-                }
-              >
-                {isStarPoint(r, c) && cell === EMPTY && <span className="omok-star" />}
-                {cell !== EMPTY && (
-                  <span
-                    className={
-                      'omok-stone' +
-                      (cell === BLACK ? ' black' : ' white') +
-                      (isWinCell(winLine, r, c) ? ' winning' : '')
-                    }
-                  />
-                )}
-              </button>
-            )),
+            row.map((cell, c) => {
+              const isForbidden = Boolean(forbiddenCells?.has(`${r}-${c}`))
+              return (
+                <button
+                  key={`${r}-${c}`}
+                  className={'omok-cell' + (isForbidden ? ' forbidden' : '')}
+                  onClick={() => handleCellClick(r, c)}
+                  disabled={
+                    phase !== 'playing' ||
+                    cell !== EMPTY ||
+                    aiThinking ||
+                    (mode === '1p' && currentPlayer !== BLACK)
+                  }
+                  title={isForbidden ? `${FORBIDDEN_LABEL[forbiddenReason(board, r, c, BLACK)]} 금수` : undefined}
+                >
+                  {isStarPoint(r, c) && cell === EMPTY && !isForbidden && <span className="omok-star" />}
+                  {isForbidden && <span className="omok-forbidden-mark" aria-hidden="true" />}
+                  {cell !== EMPTY && (
+                    <span
+                      className={
+                        'omok-stone' +
+                        (cell === BLACK ? ' black' : ' white') +
+                        (isWinCell(winLine, r, c) ? ' winning' : '')
+                      }
+                    />
+                  )}
+                </button>
+              )
+            }),
           )}
         </div>
 
@@ -162,6 +199,10 @@ export default function Omok() {
             <div className="omok-result">
               <h3>오목</h3>
               <p>15x15 판에서 가로/세로/대각선으로 5개를 먼저 이으면 승리합니다.</p>
+              <p>
+                흑(선공)은 렌주 룰의 금수가 적용됩니다: 33(삼삼)·44(사사)·장목(6개 이상)은 둘 수 없어요. 백은 제한이
+                없습니다.
+              </p>
               <p className="omok-best">최다 연승: {streak}</p>
               <div className="omok-mode-buttons">
                 <button className="btn btn-primary" onClick={() => startGame('1p')}>
@@ -193,7 +234,15 @@ export default function Omok() {
         )}
       </div>
 
-      <p className="omok-help">칸을 눌러 돌을 놓으세요. 흑이 먼저 시작합니다.</p>
+      {forbiddenNotice && (
+        <p className="omok-forbidden-notice">
+          ⚠ {FORBIDDEN_LABEL[forbiddenNotice]} 금수 자리라 둘 수 없습니다.
+        </p>
+      )}
+
+      <p className="omok-help">
+        칸을 눌러 돌을 놓으세요. 흑이 먼저 시작합니다. 흑 차례에는 금수 자리가 옅은 표시로 미리 보입니다.
+      </p>
     </div>
   )
 }
