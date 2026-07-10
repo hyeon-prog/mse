@@ -17,7 +17,7 @@ const SCOPE_TABS = [
   { id: 'school', label: '우리 학교' },
 ]
 
-const DISPLAY_LIMIT = 10
+const DISPLAY_LIMIT = 7
 
 export default function Leaderboard() {
   const [university, setUniversity] = useState(getSelectedUniversity)
