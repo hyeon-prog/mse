@@ -92,6 +92,36 @@ export function collapse(board) {
   return next
 }
 
+/**
+ * collapse()와 같은 중력 규칙으로 다음 보드를 계산하되, 각 칸이 몇 줄을
+ * 내려왔는지(fallDistances)도 함께 반환한다 - 낙하 애니메이션의 시작 오프셋으로 쓰인다.
+ * 기존 타일은 실제로 이동한 줄 수만큼, 새로 채워진 타일은 그 칸 위쪽에서 한 줄씩
+ * 이어져 내려오는 것처럼 보이도록 해당 칸에 필요한 새 타일 개수만큼을 낙하 거리로 준다.
+ */
+export function collapseWithFall(board) {
+  const next = Array.from({ length: ROWS }, () => Array(COLS).fill(null))
+  const fallDistances = {}
+  for (let c = 0; c < COLS; c++) {
+    const survivorRows = []
+    for (let r = 0; r < ROWS; r++) {
+      if (board[r][c] !== null) survivorRows.push(r)
+    }
+    const survivorCount = survivorRows.length
+    for (let i = 0; i < survivorCount; i++) {
+      const newRow = ROWS - survivorCount + i
+      next[newRow][c] = board[survivorRows[i]][c]
+      const dist = newRow - survivorRows[i]
+      if (dist > 0) fallDistances[`${newRow}-${c}`] = dist
+    }
+    const newCount = ROWS - survivorCount
+    for (let j = 0; j < newCount; j++) {
+      next[j][c] = randomType()
+      fallDistances[`${j}-${c}`] = newCount
+    }
+  }
+  return { board: next, fallDistances }
+}
+
 export function wouldMatch(board, r1, c1, r2, c2) {
   return findMatches(swapCells(board, r1, c1, r2, c2)).size > 0
 }

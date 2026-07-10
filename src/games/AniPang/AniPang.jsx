@@ -6,7 +6,7 @@ import {
   GAME_DURATION,
   ROWS,
   clearMatches,
-  collapse,
+  collapseWithFall,
   createBoard,
   findMatches,
   isAdjacent,
@@ -17,6 +17,7 @@ import './AniPang.css'
 
 const POP_DURATION = 280
 const SLIDE_DURATION = 160
+const FALL_DURATION = 260
 const DRAG_THRESHOLD = 14
 
 function initGame() {
@@ -34,6 +35,8 @@ export default function AniPang() {
   const [shaking, setShaking] = useState([])
   const [popping, setPopping] = useState([])
   const [sliding, setSliding] = useState({})
+  const [falling, setFalling] = useState({})
+  const [fallOffset, setFallOffset] = useState(false)
   const [animating, setAnimating] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -67,10 +70,22 @@ export default function AniPang() {
     setPopping(Array.from(matched))
     setTimeout(() => {
       const scoreGain = matched.size * 10 * (combo + 1)
-      const collapsed = collapse(clearMatches(board, matched))
+      const { board: collapsed, fallDistances } = collapseWithFall(clearMatches(board, matched))
       setPopping([])
       setGame((prev) => ({ ...prev, board: collapsed, score: prev.score + scoreGain }))
-      runCascade(collapsed, combo + 1)
+
+      // 낙하 애니메이션: 새 보드를 그린 그 프레임엔 트랜지션 없이 위쪽 오프셋에 그려두고,
+      // 다음 프레임에 오프셋을 0으로 되돌려 실제로 떨어지는 것처럼 보이게 한다.
+      setFalling(fallDistances)
+      setFallOffset(true)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setFallOffset(false))
+      })
+
+      setTimeout(() => {
+        setFalling({})
+        runCascade(collapsed, combo + 1)
+      }, FALL_DURATION)
     }, POP_DURATION)
   }
 
@@ -159,6 +174,8 @@ export default function AniPang() {
     setSelected(null)
     setPopping([])
     setSliding({})
+    setFalling({})
+    setFallOffset(false)
     setAnimating(false)
     setPlayerName('')
     setSaveError('')
@@ -192,6 +209,12 @@ export default function AniPang() {
             const key = `${r}-${c}`
             const isPopping = popping.includes(key)
             const slide = sliding[key]
+            const fallDist = falling[key]
+            const style = slide
+              ? { transform: `translate(${slide.tx * 100}%, ${slide.ty * 100}%)` }
+              : fallDist
+                ? { transform: fallOffset ? `translateY(${-fallDist * 100}%)` : 'translateY(0)' }
+                : undefined
             return (
               <button
                 key={key}
@@ -200,9 +223,10 @@ export default function AniPang() {
                   (selected?.r === r && selected?.c === c ? ' selected' : '') +
                   (shaking.includes(key) ? ' shaking' : '') +
                   (isPopping ? ' popping' : '') +
-                  (slide ? ' sliding' : '')
+                  (slide ? ' sliding' : '') +
+                  (fallDist ? ' falling' : '')
                 }
-                style={slide ? { transform: `translate(${slide.tx * 100}%, ${slide.ty * 100}%)` } : undefined}
+                style={style}
                 onPointerDown={(e) => handlePointerDown(e, r, c)}
                 onPointerMove={handlePointerMove}
                 onPointerUp={(e) => handlePointerUp(e, r, c)}
