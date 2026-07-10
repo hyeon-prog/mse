@@ -409,10 +409,16 @@
       flippers.push(createFlipper(leftPivot, 'left'))
       flippers.push(createFlipper(rightPivot, 'right'))
 
+      // 기존 3개는 필드 상단에만 몰려 있어서, 그 아래(슬링샷까지 이어지는 약 200px 구간)가
+      // 완전히 비어 있었습니다. 범퍼에 맞고 튕긴 공이 그 빈 구간을 그대로 관통해 옆으로
+      // 빠지며 바로 배수구로 향하는 게 "튕기면 금방 사이드로 빠진다"는 증상의 원인이라,
+      // 그 구간에 좌우로 2개를 더 채워 튕긴 공이 한 번 더 걸릴 기회를 만듭니다.
       var bumperSpecs = [
         { x: 110, y: 250, r: 26 },
         { x: 232, y: 218, r: 26 },
         { x: 172, y: 320, r: 24 },
+        { x: 88, y: 415, r: 22 },
+        { x: 254, y: 415, r: 22 },
       ]
       bumperSpecs.forEach(function (spec, i) {
         var body = Bodies.circle(spec.x, spec.y, spec.r, {
