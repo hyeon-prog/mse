@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /scores/{scoreId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasOnly(['gameId', 'name', 'score', 'createdAt', 'university'])
+      allow create: if request.resource.data.keys().hasOnly(['gameId', 'name', 'score', 'createdAt', 'university', 'verified'])
         && request.resource.data.gameId is string
         && request.resource.data.name is string
         && request.resource.data.name.size() <= 12
@@ -14,7 +14,8 @@ service cloud.firestore {
         && (!('university' in request.resource.data)
           || (request.resource.data.university is string
             && request.resource.data.university.size() > 0
-            && request.resource.data.university.size() <= 50));
+            && request.resource.data.university.size() <= 50))
+        && (!('verified' in request.resource.data) || request.resource.data.verified is bool);
       allow update, delete: if false;
     }
 
