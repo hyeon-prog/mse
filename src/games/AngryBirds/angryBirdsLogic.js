@@ -149,14 +149,26 @@ function pickMaterial(tier) {
 }
 
 /**
- * 새-돼지 여유(margin)를 스테이지 구간마다 계단식으로 줄여 난이도를 계속 올린다:
- * 1~10은 +1, 11~15는 0, 16~20은 -1, 21~25는 -2, 그 다음부터는 5스테이지마다 -1씩 더 줄어든다.
+ * 새 한 마리로 여러 돼지를 잡을 수 있는 두 가지 실제 배치 패턴을 인정해서 "이 레벨을 깨는 데
+ * 이론상 필요한 최소 샷 수"를 센다 (특수 능력 새의 무작위 등장에 기대지 않고, 어떤 새로도
+ * 되는 경우만 계산한다):
+ *  - 타워 꼭대기 돼지: 아래로 떨어지는 포물선이 타워를 맞힌 뒤에도 HIT_SPEED_RETAIN(60%)
+ *    속도로 계속 이어지며 바로 옆 골짜기 돼지까지 이어서 잡을 수 있다고 보고, 타워+그
+ *    바로 다음 골짜기 돼지를 한 샷으로 묶는다.
+ *  - 골짜기/여분 돼지 중 앞에 이어 잡을 타워가 없는 경우(맨 끝, 또는 골짜기 배치가 다 끝난
+ *    뒤 따로 떨어져 배치되는 여분 돼지들)는 서로 너무 멀리 떨어져 있어 각자 샷이 필요하다.
  */
-function marginForStage(stage) {
-  if (stage <= 10) return 1
-  if (stage <= 15) return 0
-  const block = Math.floor((stage - 16) / 5)
-  return -1 - block
+function countMinShots(towerPigCount, extraPigCount) {
+  // 골짜기 돼지는 그 앞 타워 샷에 묻어간다고 보므로 별도로 세지 않는다.
+  return towerPigCount + extraPigCount
+}
+
+/**
+ * 최소 샷 수 위에 얹어주는 여유(cushion)를 스테이지가 오를수록 계단식으로 줄여서,
+ * 뒤로 갈수록 점점 최소 샷 수에 가깝게 - 결국 그 최소치로만 - 깰 수 있게 만든다.
+ */
+function cushionForStage(stage) {
+  return Math.max(0, 2 - Math.floor((stage - 1) / 5))
 }
 
 function generateLevel(levelIndex) {
@@ -165,7 +177,6 @@ function generateLevel(levelIndex) {
   const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
   const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
   const pigCount = Math.min(4 + tier, 10)
-  const birdCount = Math.max(1, pigCount + marginForStage(stage))
 
   const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
   const towerXs = Array.from({ length: towerCount }, (_, t) =>
@@ -192,17 +203,23 @@ function generateLevel(levelIndex) {
   towerXs.forEach((x, i) => {
     if (pigs.length < pigCount) pigs.push({ x, y: towerTops[i] - PROC_PIG_R, r: PROC_PIG_R })
   })
+  const towerPigCount = pigs.length
 
   for (let i = 0; i < towerXs.length - 1 && pigs.length < pigCount; i++) {
     const midX = (towerXs[i] + towerXs[i + 1]) / 2
     pigs.push({ x: midX, y: GROUND_Y - PROC_PIG_R, r: PROC_PIG_R })
   }
+  const valleyPigCount = pigs.length - towerPigCount
 
   let fallbackX = PROC_ZONE_END + 30
   while (pigs.length < pigCount && fallbackX < ARENA_WIDTH - 20) {
     pigs.push({ x: fallbackX, y: GROUND_Y - PROC_PIG_R, r: PROC_PIG_R })
     fallbackX += 35
   }
+  const extraPigCount = pigs.length - towerPigCount - valleyPigCount
+
+  const minShots = countMinShots(towerPigCount, extraPigCount)
+  const birdCount = Math.max(1, minShots + cushionForStage(stage))
 
   return { birdCount, blocks, pigs }
 }

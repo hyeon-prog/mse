@@ -236,7 +236,9 @@ export default function AniPang() {
                 {isPopping && (
                   <span className="ap-burst">
                     {Array.from({ length: 8 }, (_, i) => (
-                      <span key={i} className="ap-spark" style={{ '--i': i }} />
+                      <span key={i} className="ap-spark" style={{ '--i': i }}>
+                        {type}
+                      </span>
                     ))}
                   </span>
                 )}
