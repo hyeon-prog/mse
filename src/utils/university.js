@@ -1,5 +1,6 @@
 import { addDoc, collection, getDocs, limit, orderBy, query, serverTimestamp, where } from 'firebase/firestore'
 import { db } from '../firebase.js'
+import { canonicalizeUniversityName } from './universityCanonical.js'
 
 const STORAGE_KEY = 'mse-university'
 const roomsRef = collection(db, 'rooms')
@@ -21,7 +22,9 @@ export function leaveUniversity() {
 }
 
 export async function searchRooms(prefixText) {
-  const prefix = normalize(prefixText)
+  // 검색어도 "서울대"/"국립서울대학교" 같은 별칭을 정식 명칭으로 바꿔서 찾는다 —
+  // 그래야 이미 "서울대학교"로 등록된 방을 별칭으로 검색해도 찾아진다.
+  const prefix = normalize(canonicalizeUniversityName(prefixText))
   if (!prefix) return []
   const q = query(
     roomsRef,
@@ -35,20 +38,21 @@ export async function searchRooms(prefixText) {
 }
 
 export async function findExactRoom(name) {
-  const target = normalize(name)
+  const target = normalize(canonicalizeUniversityName(name))
   const q = query(roomsRef, where('normalizedName', '==', target), limit(1))
   const snapshot = await getDocs(q)
   return snapshot.empty ? null : snapshot.docs[0].data().name
 }
 
 export async function createRoom(name) {
-  const trimmed = name.trim()
-  const existing = await findExactRoom(trimmed)
+  // 별칭(약칭/국립 접두어 등)으로 들어와도 항상 하나의 정식 명칭으로만 방이 생성되게 한다.
+  const canonical = canonicalizeUniversityName(name)
+  const existing = await findExactRoom(canonical)
   if (existing) return existing
   await addDoc(roomsRef, {
-    name: trimmed,
-    normalizedName: normalize(trimmed),
+    name: canonical,
+    normalizedName: normalize(canonical),
     createdAt: serverTimestamp(),
   })
-  return trimmed
+  return canonical
 }

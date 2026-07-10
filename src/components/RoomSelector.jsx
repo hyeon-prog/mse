@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import UniversityLogo from './UniversityLogo.jsx'
 import { createRoom, normalize, searchRooms } from '../utils/university.js'
+import { canonicalizeUniversityName } from '../utils/universityCanonical.js'
 
 export default function RoomSelector({ onJoin }) {
   const [query, setQuery] = useState('')
@@ -25,7 +26,8 @@ export default function RoomSelector({ onJoin }) {
     return () => clearTimeout(id)
   }, [query])
 
-  const hasExactMatch = results.some((name) => normalize(name) === normalize(query))
+  const canonicalQuery = useMemo(() => canonicalizeUniversityName(query), [query])
+  const hasExactMatch = results.some((name) => normalize(name) === normalize(canonicalQuery))
 
   const handleJoin = async (name) => {
     setJoining(true)
@@ -81,9 +83,14 @@ export default function RoomSelector({ onJoin }) {
       )}
 
       {!searching && query.trim() && !hasExactMatch && (
-        <button className="btn btn-primary room-selector-create" onClick={handleCreate} disabled={joining}>
-          {joining ? '만드는 중...' : `"${query.trim()}" 방 새로 만들기`}
-        </button>
+        <>
+          <button className="btn btn-primary room-selector-create" onClick={handleCreate} disabled={joining}>
+            {joining ? '만드는 중...' : `"${canonicalQuery}" 방 새로 만들기`}
+          </button>
+          {canonicalQuery !== query.trim() && (
+            <p className="room-selector-hint">동일 학교 표기는 "{canonicalQuery}"로 통일해서 등록됩니다.</p>
+          )}
+        </>
       )}
     </div>
   )

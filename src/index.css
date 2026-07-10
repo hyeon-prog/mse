@@ -593,6 +593,12 @@ h3 { font-size: 0.9rem; }
   font-size: 0.95rem;
 }
 
+.room-selector-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: -6px 0 0;
+}
+
 .room-selector-list {
   list-style: none;
   padding: 0;
