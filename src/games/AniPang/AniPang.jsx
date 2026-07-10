@@ -16,7 +16,7 @@ import {
 import './AniPang.css'
 
 const POP_DURATION = 280
-const SWAP_SETTLE_DELAY = 90
+const SLIDE_DURATION = 160
 const DRAG_THRESHOLD = 14
 
 function initGame() {
@@ -33,6 +33,7 @@ export default function AniPang() {
   const [selected, setSelected] = useState(null)
   const [shaking, setShaking] = useState([])
   const [popping, setPopping] = useState([])
+  const [sliding, setSliding] = useState({})
   const [animating, setAnimating] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -82,10 +83,21 @@ export default function AniPang() {
       setTimeout(() => setShaking([]), 220)
       return
     }
-    const swapped = swapCells(board, r1, c1, r2, c2)
-    setGame((prev) => ({ ...prev, board: swapped }))
+
     setAnimating(true)
-    setTimeout(() => runCascade(swapped, 0), SWAP_SETTLE_DELAY)
+    const dr = r2 - r1
+    const dc = c2 - c1
+    // 실제로 자리를 맞바꾸기 전에, 두 칸을 각자 상대 위치까지 슬라이드시켜 보여준다.
+    setSliding({
+      [`${r1}-${c1}`]: { tx: dc, ty: dr },
+      [`${r2}-${c2}`]: { tx: -dc, ty: -dr },
+    })
+    setTimeout(() => {
+      setSliding({})
+      const swapped = swapCells(board, r1, c1, r2, c2)
+      setGame((prev) => ({ ...prev, board: swapped }))
+      runCascade(swapped, 0)
+    }, SLIDE_DURATION)
   }
 
   const handleTap = (r, c) => {
@@ -146,6 +158,7 @@ export default function AniPang() {
     setGame(initGame())
     setSelected(null)
     setPopping([])
+    setSliding({})
     setAnimating(false)
     setPlayerName('')
     setSaveError('')
@@ -178,6 +191,7 @@ export default function AniPang() {
           row.map((type, c) => {
             const key = `${r}-${c}`
             const isPopping = popping.includes(key)
+            const slide = sliding[key]
             return (
               <button
                 key={key}
@@ -185,8 +199,10 @@ export default function AniPang() {
                   'ap-cell' +
                   (selected?.r === r && selected?.c === c ? ' selected' : '') +
                   (shaking.includes(key) ? ' shaking' : '') +
-                  (isPopping ? ' popping' : '')
+                  (isPopping ? ' popping' : '') +
+                  (slide ? ' sliding' : '')
                 }
+                style={slide ? { transform: `translate(${slide.tx * 100}%, ${slide.ty * 100}%)` } : undefined}
                 onPointerDown={(e) => handlePointerDown(e, r, c)}
                 onPointerMove={handlePointerMove}
                 onPointerUp={(e) => handlePointerUp(e, r, c)}

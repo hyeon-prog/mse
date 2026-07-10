@@ -94,6 +94,11 @@
   animation: apShake 0.18s ease;
 }
 
+.ap-cell.sliding {
+  transition: transform 0.16s ease;
+  z-index: 3;
+}
+
 .ap-cell.popping {
   animation: apBurst 0.28s ease-out forwards;
   z-index: 2;

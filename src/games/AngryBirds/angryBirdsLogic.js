@@ -114,7 +114,8 @@ export const HANDCRAFTED_LEVELS = [
     ],
   },
   {
-    birdCount: 4,
+    // 5번째(스테이지 5)부터는 새를 돼지 수보다 딱 1마리만 더 줘서 여유를 거의 없앤다.
+    birdCount: 5,
     blocks: [
       { x: 380, y: GROUND_Y - 20, w: 20, h: 40, material: 'stone' },
       { x: 380, y: GROUND_Y - 60, w: 20, h: 40, material: 'wood' },
@@ -152,7 +153,8 @@ function generateLevel(levelIndex) {
   const towerCount = Math.min(3 + Math.floor(tier / 2), 6)
   const maxHeight = Math.min(2 + Math.floor(tier / 2), 5)
   const pigCount = Math.min(4 + tier, 10)
-  const birdCount = Math.min(pigCount, 10)
+  // 스테이지 5 이후는 계속 여유 없이 어려워야 하므로, 돼지 수보다 딱 1마리만 더 준다.
+  const birdCount = pigCount + 1
 
   const spacing = towerCount > 1 ? (PROC_ZONE_END - PROC_ZONE_START) / (towerCount - 1) : 0
   const towerXs = Array.from({ length: towerCount }, (_, t) =>
