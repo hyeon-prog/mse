@@ -12,12 +12,20 @@ const PERIOD_TABS = [
   { id: 'all', label: '전체' },
 ]
 
+const SCOPE_TABS = [
+  { id: 'all', label: '전체 랭킹' },
+  { id: 'school', label: '우리 학교' },
+]
+
+const DISPLAY_LIMIT = 10
+
 export default function Leaderboard() {
   const [university, setUniversity] = useState(getSelectedUniversity)
   const [showRoomSelector, setShowRoomSelector] = useState(false)
   const [activeGameId, setActiveGameId] = useState(games[0]?.id)
   const [activeDifficulty, setActiveDifficulty] = useState(games[0]?.difficulties?.[0]?.id ?? null)
   const [activePeriod, setActivePeriod] = useState('all')
+  const [scope, setScope] = useState('all')
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -60,6 +68,18 @@ export default function Leaderboard() {
     setUniversity(null)
   }
 
+  const handleSelectScope = (nextScope) => {
+    setScope(nextScope)
+    if (nextScope === 'school' && !university) {
+      setShowRoomSelector(true)
+    }
+  }
+
+  const scopedScores = scope === 'school' && university ? scores.filter((entry) => entry.university === university) : scores
+  const displayScores = scopedScores.slice(0, DISPLAY_LIMIT)
+  const hasMore = scopedScores.length > DISPLAY_LIMIT
+  const needsUniversityForSchoolScope = scope === 'school' && !university
+
   return (
     <section className="leaderboard">
       <div className="leaderboard-room-header">
@@ -78,10 +98,22 @@ export default function Leaderboard() {
         )}
       </div>
       <p className="leaderboard-hint">
-        랭킹은 모든 학교의 기록이 함께 표시돼요. 내 학교를 설정하면 점수를 등록할 때 학교 이름이 같이 남습니다.
+        내 학교를 설정하면 점수를 등록할 때 학교 이름이 같이 남고, 아래에서 전체 랭킹과 우리 학교 랭킹을 나눠서 볼 수 있어요.
       </p>
 
       {!university && showRoomSelector && <RoomSelector onJoin={handleJoin} />}
+
+      <div className="leaderboard-scope-tabs">
+        {SCOPE_TABS.map((s) => (
+          <button
+            key={s.id}
+            className={'leaderboard-scope-tab' + (s.id === scope ? ' active' : '')}
+            onClick={() => handleSelectScope(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
 
       <div className="leaderboard-tabs">
         {games.map((game) => (
@@ -125,11 +157,15 @@ export default function Leaderboard() {
         <p className="leaderboard-empty">불러오는 중...</p>
       ) : error ? (
         <p className="leaderboard-empty">{error}</p>
-      ) : scores.length === 0 ? (
+      ) : needsUniversityForSchoolScope ? (
+        <p className="leaderboard-empty">
+          우리 학교 랭킹을 보려면 먼저 학교를 설정해주세요.
+        </p>
+      ) : scopedScores.length === 0 ? (
         <p className="leaderboard-empty">아직 기록이 없습니다. 게임을 플레이해서 첫 기록을 남겨보세요!</p>
       ) : (
         <ol className="leaderboard-list">
-          {scores.map((entry, i) => (
+          {displayScores.map((entry, i) => (
             <li key={i} className="leaderboard-row">
               <span className="leaderboard-rank">{i + 1}</span>
               <span className="leaderboard-school">
@@ -148,6 +184,11 @@ export default function Leaderboard() {
               </span>
             </li>
           ))}
+          {hasMore && (
+            <li className="leaderboard-row leaderboard-more">
+              <span className="leaderboard-more-dots">···</span>
+            </li>
+          )}
         </ol>
       )}
     </section>
